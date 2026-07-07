@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    karmada.io/bootstrapping: service-defaults
+  name: karmada-aggregated-apiserver
+  namespace: karmada-system  # kpt-set: ${namespace}
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 443
+  selector:
+    apiserver: 'true'
+    app: karmada-aggregated-apiserver
+  sessionAffinity: None
+  type: ClusterIP

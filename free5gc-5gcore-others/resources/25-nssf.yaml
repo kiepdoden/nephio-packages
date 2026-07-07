@@ -1,0 +1,455 @@
+apiVersion: v1
+data:
+  nssfcfg.yaml: |
+    info:
+      version: 1.0.2
+      description: NSSF initial local configuration
+
+    configuration:
+      serviceNameList:
+        - nnssf-nsselection
+        - nnssf-nssaiavailability
+
+      sbi:
+        scheme: http
+        registerIPv4: free5gc-free5gc-nssf-service # IP used to register to NRF
+        bindingIPv4: 0.0.0.0  # IP used to bind the service
+        port: 80
+        tls:
+          key: ./cert/nssf.key
+          pem: ./cert/nssf.pem
+
+      nrfUri: http://nrf-nnrf:8000
+      nrfCertPem: cert/nrf.pem
+
+      nsiList:
+        - snssai:
+            sst: 1
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 10
+        - snssai:
+            sst: 1
+            sd: 1
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 11
+        - snssai:
+            sst: 1
+            sd: 2
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 12
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 12
+        - snssai:
+            sst: 1
+            sd: 3
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 13
+        - snssai:
+            sst: 2
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 20
+        - snssai:
+            sst: 2
+            sd: 1
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 21
+        - snssai:
+            sst: 1
+            sd: 010203
+          nsiInformationList:
+            - nrfId: http://nrf-nnrf:8000/nnrf-nfm/v1/nf-instances
+              nsiId: 22
+      amfSetList:
+        - amfSetId: 1
+          amfList:
+            - ffa2e8d7-3275-49c7-8631-6af1df1d9d26
+            - 0e8831c3-6286-4689-ab27-1e2161e15cb1
+            - a1fba9ba-2e39-4e22-9c74-f749da571d0d
+          nrfAmfSet: http://nrf-nnrf:8081/nnrf-nfm/v1/nf-instances
+          supportedNssaiAvailabilityData:
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33456
+              supportedSnssaiList:
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 2
+                - sst: 2
+                  sd: 1
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33457
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 2
+        - amfSetId: 2
+          nrfAmfSet: http://nrf-nnrf:8084/nnrf-nfm/v1/nf-instances
+          supportedNssaiAvailabilityData:
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33456
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 3
+                - sst: 2
+                  sd: 1
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33458
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 2
+      nssfName: NSSF
+      supportedPlmnList:
+        - mcc: 208
+          mnc: 93
+      supportedNssaiInPlmnList:
+        - plmnId:
+            mcc: 208
+            mnc: 93
+          supportedSnssaiList:
+            - sst: 1
+              sd: 010203
+            - sst: 1
+              sd: 112233
+            - sst: 1
+              sd: 3
+            - sst: 2
+              sd: 1
+            - sst: 2
+              sd: 2
+      amfList:
+        - nfId: 469de254-2fe5-4ca0-8381-af3f500af77c
+          supportedNssaiAvailabilityData:
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33456
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 2
+                - sst: 2
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33457
+              supportedSnssaiList:
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 2
+        - nfId: fbe604a8-27b2-417e-bd7c-8a7be2691f8d
+          supportedNssaiAvailabilityData:
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33458
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 3
+                - sst: 2
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33459
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 2
+                - sst: 2
+                  sd: 1
+        - nfId: b9e6e2cb-5ce8-4cb6-9173-a266dd9a2f0c
+          supportedNssaiAvailabilityData:
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33456
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 1
+                  sd: 2
+                - sst: 2
+            - tai:
+                plmnId:
+                  mcc: 466
+                  mnc: 92
+                tac: 33458
+              supportedSnssaiList:
+                - sst: 1
+                - sst: 1
+                  sd: 1
+                - sst: 2
+                - sst: 2
+                  sd: 1
+      taList:
+        - tai:
+            plmnId:
+              mcc: 466
+              mnc: 92
+            tac: 33456
+          accessType: 3GPP_ACCESS
+          supportedSnssaiList:
+            - sst: 1
+            - sst: 1
+              sd: 1
+            - sst: 1
+              sd: 2
+            - sst: 2
+        - tai:
+            plmnId:
+              mcc: 466
+              mnc: 92
+            tac: 33457
+          accessType: 3GPP_ACCESS
+          supportedSnssaiList:
+            - sst: 1
+            - sst: 1
+              sd: 1
+            - sst: 1
+              sd: 2
+            - sst: 2
+        - tai:
+            plmnId:
+              mcc: 466
+              mnc: 92
+            tac: 33458
+          accessType: 3GPP_ACCESS
+          supportedSnssaiList:
+            - sst: 1
+            - sst: 1
+              sd: 1
+            - sst: 1
+              sd: 3
+            - sst: 2
+          restrictedSnssaiList:
+            - homePlmnId:
+                mcc: 310
+                mnc: 560
+              sNssaiList:
+                - sst: 1
+                  sd: 3
+        - tai:
+            plmnId:
+              mcc: 466
+              mnc: 92
+            tac: 33459
+          accessType: 3GPP_ACCESS
+          supportedSnssaiList:
+            - sst: 1
+            - sst: 1
+              sd: 1
+            - sst: 2
+            - sst: 2
+              sd: 1
+          restrictedSnssaiList:
+            - homePlmnId:
+                mcc: 310
+                mnc: 560
+              sNssaiList:
+                - sst: 2
+                  sd: 1
+      mappingListFromPlmn:
+        - operatorName: NTT Docomo
+          homePlmnId:
+            mcc: 440
+            mnc: 10
+          mappingOfSnssai:
+            - servingSnssai:
+                sst: 1
+                sd: 1
+              homeSnssai:
+                sst: 1
+                sd: 1
+            - servingSnssai:
+                sst: 1
+                sd: 2
+              homeSnssai:
+                sst: 1
+                sd: 3
+            - servingSnssai:
+                sst: 1
+                sd: 3
+              homeSnssai:
+                sst: 1
+                sd: 4
+            - servingSnssai:
+                sst: 2
+                sd: 1
+              homeSnssai:
+                sst: 2
+                sd: 2
+        - operatorName: AT&T Mobility
+          homePlmnId:
+            mcc: 310
+            mnc: 560
+          mappingOfSnssai:
+            - servingSnssai:
+                sst: 1
+                sd: 1
+              homeSnssai:
+                sst: 1
+                sd: 2
+            - servingSnssai:
+                sst: 1
+                sd: 2
+              homeSnssai:
+                sst: 1
+                sd: 3
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: free5gc-free5gc-nssf-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nssf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nssf-0.2.7
+    nf: nssf
+    project: free5gc
+  name: free5gc-free5gc-nssf-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-nssf
+    nf: nssf
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nssf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nssf-0.2.7
+    nf: nssf
+    project: free5gc
+  name: free5gc-free5gc-nssf-nssf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-nssf
+      nf: nssf
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: ed322c8184e8e071bae50ad0ab8ac9076c024a4149d40854d393630f334b9d48
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-nssf
+        nf: nssf
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/nssfcfg.yaml
+          command:
+            - ./nssf
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/nssf:v4.0.1  # kpt-set: ${image-nssf}
+          imagePullPolicy: Always
+          name: nssf
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-nssf-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-nssf-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-nssf-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-nssf-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-nssf-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-nssf-empty-volume
+        - name: free5gc-free5gc-nssf-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

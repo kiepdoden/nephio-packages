@@ -1,0 +1,121 @@
+apiVersion: v1
+data:
+  nefcfg.yaml: "info:\n  version: 1.0.1\n  description: NEF initial local configuration\n\nconfiguration:\n  sbi:\n    scheme: http # The protocol for sbi (http or https)\n    registerIPv4: free5gc-free5gc-nef-service # IP used to register to NRF\n    bindingIPv4: 0.0.0.0 # IP used to bind the service\n    port: 80 # port used to bind the service\n    tls: # the local path of TLS key\n      pem: ./cert/nef.pem # NEF TLS Certificate\n      key: ./cert/nef.key # NEF TLS Private key\n  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF \n  nrfCertPem: ./cert/nrf.pem # NRF Certificate\n  serviceList: # the SBI services provided by this NEF\n    - serviceName: nnef-pfdmanagement # Nnef_PFDManagement Service\n    - serviceName: nnef-oam # OAM service\n\nlogger: # log output setting\n  enable: true\n  level: info\n  reportCaller: false\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: free5gc-free5gc-nef-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nef
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nef-0.1.0
+    nf: nef
+    project: free5gc
+  name: free5gc-free5gc-nef-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-nef
+    nf: nef
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nef
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nef-0.1.0
+    nf: nef
+    project: free5gc
+  name: free5gc-free5gc-nef-nef
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-nef
+      nf: nef
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 911af2d1aae14cefb4f4cb52610003f5ca87ba85f9a10622e37b2f3ff4add623
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-nef
+        nf: nef
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/nefcfg.yaml
+          command:
+            - ./nef
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/nef:v4.0.1  # kpt-set: ${image-nef}
+          imagePullPolicy: Always
+          name: nef
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-nef-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-nef-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-nef-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-nef-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-nef-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-nef-empty-volume
+        - name: free5gc-free5gc-nef-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

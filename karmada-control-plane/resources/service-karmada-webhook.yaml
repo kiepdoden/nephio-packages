@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    karmada.io/bootstrapping: service-defaults
+  name: karmada-webhook
+  namespace: karmada-system  # kpt-set: ${namespace}
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: webhook
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: karmada-webhook
+  sessionAffinity: None
+  type: ClusterIP

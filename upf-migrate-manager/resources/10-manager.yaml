@@ -1,0 +1,256 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-system # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-controller-manager
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-leader-election-role
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-leader-election-rolebinding
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: upf-migrate-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: upf-migrate-controller-manager
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+---
+# ClusterRole chính: quản lý Migrate/Registration/NextmnUPFMap/CloudNICPool/CloudNICClaim/IPPool
+# (upf.ahihi.ahuhu) + Checkpoint/Restore (migrate.ahihi.ahuhu) + configmaps/namespaces/pods/secrets/nodes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: upf-migrate-manager-role
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "namespaces", "pods", "secrets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["*"]
+- apiGroups: ["migrate.ahihi.ahuhu"]
+  resources: ["checkpoints", "restores"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["migrate.ahihi.ahuhu"]
+  resources: ["checkpoints/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicclaims", "cloudnicpools", "ippools", "migrates", "nextmnupfmaps", "registrations"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicclaims/finalizers", "cloudnicpools/finalizers", "migrates/finalizers", "nextmnupfmaps/finalizers", "registrations/finalizers"]
+  verbs: ["update"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicclaims/status", "cloudnicpools/status", "ippools/status", "migrates/status", "nextmnupfmaps/status", "registrations/status"]
+  verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: upf-migrate-manager-role
+subjects:
+- kind: ServiceAccount
+  name: upf-migrate-controller-manager
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: upf-migrate-metrics-auth-role
+rules:
+- apiGroups: ["authentication.k8s.io"]
+  resources: ["tokenreviews"]
+  verbs: ["create"]
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: upf-migrate-metrics-auth-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: upf-migrate-metrics-auth-role
+subjects:
+- kind: ServiceAccount
+  name: upf-migrate-controller-manager
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: upf-migrate-metrics-reader
+rules:
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-controller-manager-service
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+spec:
+  selector:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+  ports:
+    - name: grpc-server
+      port: 7000
+      protocol: TCP
+      targetPort: 7000
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+  name: upf-migrate-controller-manager-metrics-service
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upf-migrate-controller-manager
+  namespace: upf-migrate-system # kpt-set: ${namespace}
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      app.kubernetes.io/name: upf-migrate
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+        app.kubernetes.io/name: upf-migrate
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - command:
+        - /root/manager
+        args:
+          - --leader-elect
+          - --health-probe-bind-address=:8081
+          - --enable-multi-cluster=true
+        image: kiepdoden123/upf-manager:hybrid-host-device-v2 # kpt-set: ${image-manager}
+        env:
+        - name: AWS_REGION
+          value: "us-east-2" # kpt-set: ${aws-region}
+        - name: NRF_ADDRESS
+          value: "192.168.10.10:30348" # kpt-set: ${nrf-address}
+        - name: 5GCORE_NAMESPACE
+          value: "5gcore" # kpt-set: ${5gcore-namespace}
+        - name: SDN_CONTROLLER_ADDRESS
+          value: "192.168.1.10:8000" # kpt-set: ${sdn-controller-address}
+        # Host:port reachable from member-cluster UPF pods for gRPC (StreamSessionTransfer + Registration).
+        - name: UPF_MANAGER_GRPC_HOST
+          value: "192.168.10.10:7000" # kpt-set: ${grpc-host}
+        name: manager
+        ports:
+        - containerPort: 7000
+          name: grpc-port
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        volumeMounts:
+          - name: karmada-kubeconfig
+            mountPath: /etc/multi-cluster-config
+            subPath: kubeconfig
+      volumes:
+        - name: karmada-kubeconfig
+          configMap:
+            name: karmada-kubeconfig-configmap
+      serviceAccountName: upf-migrate-controller-manager
+      terminationGracePeriodSeconds: 10

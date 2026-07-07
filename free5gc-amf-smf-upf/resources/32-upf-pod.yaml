@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: upf-test-pod
+  namespace: default # kpt-set: ${upf-namespace}
+  annotations:
+    k8s.v1.cni.cncf.io/networks: >
+      [
+        {
+          "name": "n3-conf",
+          "interface": "n3",
+          "ips": [ "192.168.40.11" ],
+          "gateway": [ "192.168.40.1" ]
+        },
+        {
+          "name": "n4-conf",
+          "interface": "n4",
+          "ips": [ "192.168.50.11" ],
+          "gateway": [ "192.168.50.1" ]
+        },
+        {
+          "name": "n6-conf",
+          "interface": "n6",
+          "ips": [ "192.168.60.11" ],
+          "gateway": [ "192.168.60.1" ]
+        }
+      ]
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - ip-192-168-10-12
+  containers:
+    - name: upf-test-container
+      image: docker.io/kiemtcb/upf-test:nextmn-test-not-debug  # kpt-set: ${image-upf}
+      imagePullPolicy: Always
+      volumeMounts:
+        - name: session-manager-config
+          mountPath: /home/sesion_manager/config.yaml
+          subPath: config.yaml
+        - name: config
+          mountPath: /config.yaml
+          subPath: config.yaml
+      securityContext:
+        privileged: true
+  volumes:
+    - name: session-manager-config
+      configMap:
+        name: session-manager-configmap # Replace with the actual ConfigMap name
+    - name: config
+      configMap:
+        name: config-upf-configmap # Replace with the actual ConfigMap name

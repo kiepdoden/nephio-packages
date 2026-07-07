@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: enipool-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/component: enipool-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: enipool-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: enipool-manager
+  namespace: enipool-system  # kpt-set: ${enipool-namespace}
+  labels:
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/component: enipool-manager
+---
+# The enipool-manager only ever talks to two CRDs in the upf.ahihi.ahuhu
+# group and to Nodes (read-only, for the warming nodeSelector). Keeping
+# this ClusterRole minimal limits the blast radius of the cloud
+# credentials this pod holds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: enipool-manager-role
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicpools", "cloudnicclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicpools/status", "cloudnicclaims/status"]
+  verbs: ["get", "update", "patch"]
+- apiGroups: ["upf.ahihi.ahuhu"]
+  resources: ["cloudnicpools/finalizers", "cloudnicclaims/finalizers"]
+  verbs: ["update"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: enipool-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: enipool-manager-role
+subjects:
+- kind: ServiceAccount
+  name: enipool-manager
+  namespace: enipool-system  # kpt-set: ${enipool-namespace}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enipool-manager
+  namespace: enipool-system  # kpt-set: ${enipool-namespace}
+  labels:
+    control-plane: enipool-manager
+    app.kubernetes.io/name: upf-migrate
+    app.kubernetes.io/component: enipool-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: enipool-manager
+      app.kubernetes.io/name: upf-migrate
+  template:
+    metadata:
+      labels:
+        control-plane: enipool-manager
+        app.kubernetes.io/name: upf-migrate
+        app.kubernetes.io/component: enipool-manager
+        # Required when running on AKS with workload identity federation.
+        # Harmless on EKS / other clusters.
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: enipool-manager
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        # Image distroless chạy as root (USER 65532 bị comment trong Dockerfile).
+        # Phải khớp với config/manager/manager.yaml của upf-migrate.
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: manager
+        image: kiepdoden123/upf-manager:hybrid-host-device-v1  # kpt-set: ${image-enipool-manager}
+        imagePullPolicy: IfNotPresent
+        command: ["/root/enipool-manager"]
+        args:
+        - --leader-elect
+        - --health-probe-bind-address=:8082
+        # Multi-cloud: keep both providers enabled so the same operator
+        # serves AWS pools and Azure pools.
+        - --clouds=aws,azure
+        env:
+        # AWS credentials come from the IRSA/EC2 instance role, but
+        # AWS_REGION is needed for SDK default config to pick a region.
+        - name: AWS_REGION
+          value: "us-east-2"  # kpt-set: ${aws-region}
+        # Azure subscription / RG / location can be set here or via
+        # --azure-* flags. Workload identity provides the credential.
+        - name: AZURE_SUBSCRIPTION_ID
+          value: "91414a5d-9d4e-4b1a-8de6-d0a95a6d0490"  # kpt-set: ${azure-subscription-id}
+        - name: AZURE_RESOURCE_GROUP
+          value: "rg-upf-migrate-azure"  # kpt-set: ${azure-resource-group}
+        - name: AZURE_LOCATION
+          value: "eastus2"  # kpt-set: ${azure-location}
+        ports:
+        - containerPort: 8082
+          name: health
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          readOnlyRootFilesystem: true

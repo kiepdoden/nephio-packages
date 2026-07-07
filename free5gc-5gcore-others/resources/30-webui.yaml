@@ -1,0 +1,167 @@
+apiVersion: v1
+data:
+  webuicfg.yaml: "info:\n  version: 1.0.3\n  description: WEBUI initial local configuration\n\nconfiguration:\n  mongodb:\n    name: free5gc\n    url: mongodb://mongodb:27017\n  nrfUri: http://nrf-nnrf:8000\n  nrfCertPem: cert/nrf.pem\n  webServer:\n    scheme: http\n    ipv4Address: 0.0.0.0\n    port: 5000\n  billingServer:\n    enable: true\n    hostIPv4: 0.0.0.0\n    listenPort: 2122\n    portRange: # passive port range\n      start: 2123\n      end: 2130\n    basePath: /tmp/webconsole\n    port: 2121\n    tls:\n      pem: ./cert/chf.pem\n      key: ./cert/chf.key\n    \nlogger:\n  enable: true\n  level: info\n  reportCaller: false\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: webui-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-webui
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-webui-0.1.5
+    nf: webui
+    project: free5gc
+  name: webui-nbiling
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: webui-nbiling
+      port: 2122
+      protocol: TCP
+      targetPort: 2122
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-webui
+    nf: webui
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-webui
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-webui-0.1.5
+    nf: webui
+    project: free5gc
+  name: webui-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      nodePort: 30500
+      port: 5000
+      protocol: TCP
+      targetPort: 5000
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-webui
+    nf: webui
+    project: free5gc
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-webui
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-webui-0.1.5
+    nf: webui
+    project: free5gc
+  name: free5gc-free5gc-webui-webui
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-webui
+      nf: webui
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 301a1917504b51355194e2f33760900258d4dfa4cd5a98112b0a2e0f0a3b3eea
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-webui
+        nf: webui
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/webuicfg.yaml
+          command:
+            - ./webui
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/webui:v4.0.1  # kpt-set: ${image-webui}
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: webui
+          ports:
+            - containerPort: 5000
+            - containerPort: 2122
+          readinessProbe:
+            failureThreshold: 40
+            httpGet:
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: webui-volume
+            - mountPath: /free5gc/config/TLS
+              name: webui-volume-empty
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-webui-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - until nc -z $DEPENDENCIES; do echo waiting for the MongoDB; sleep 2; done;
+          env:
+            - name: DEPENDENCIES
+              value: mongodb:27017
+          image: busybox:1.32.0
+          name: wait-mongo
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: webui-volume
+          projected:
+            sources:
+              - configMap:
+                  name: webui-configmap
+        - emptyDir: {}
+          name: webui-volume-empty
+        - name: free5gc-free5gc-webui-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

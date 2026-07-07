@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: 5gcore
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    project: free5gc
+  name: cert-pvc
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 1Mi
+  selector:
+    matchLabels:
+      project: free5gc

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: setters
+  annotations:
+    config.kubernetes.io/local-config: "true"
+data:
+  # Namespaces (mỗi controller có 1 namespace riêng theo thiết kế gốc)
+  agent-namespace: agent-system
+  migrate-namespace: migrate-system
+  enipool-namespace: enipool-system
+  # Container images
+  image-agent: kiemtcb/controller-migrate:agent
+  image-migrate-controller: kiemtcb/controller-migrate:checkpoint-restore-v1
+  image-enipool-manager: kiepdoden123/upf-manager:hybrid-host-device-v1
+  # enipool-manager cloud credentials/context
+  aws-region: us-east-2
+  azure-subscription-id: "91414a5d-9d4e-4b1a-8de6-d0a95a6d0490"
+  azure-resource-group: rg-upf-migrate-azure
+  azure-location: eastus2

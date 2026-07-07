@@ -1,0 +1,564 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: cloudnicpools.upf.ahihi.ahuhu
+spec:
+  group: upf.ahihi.ahuhu
+  names:
+    kind: CloudNICPool
+    listKind: CloudNICPoolList
+    plural: cloudnicpools
+    shortNames:
+    - cnp
+    singular: cloudnicpool
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.cloud
+      name: Cloud
+      type: string
+    - jsonPath: .spec.networkFunction
+      name: NF
+      type: string
+    - jsonPath: .spec.size
+      name: Size
+      type: integer
+    - jsonPath: .status.availableCount
+      name: Available
+      type: integer
+    - jsonPath: .status.claimedCount
+      name: Claimed
+      type: integer
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: CloudNICPool is the Schema for the cloudnicpools API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudNICPoolSpec defines the desired state of a CloudNICPool.
+            properties:
+              azureAttachPolicy:
+                description: |-
+                  AzureAttachPolicy controls how NICs are bound to Azure VMs (Cloud=azure
+                  only). HotOnly: update the running VM network profile only.
+                  DeallocateIfNeeded: on Azure errors that forbid live NIC changes, the
+                  operator deallocates the VM, attaches the NIC, then starts the VM again.
+                  Causes brief node outage — cordon/drain the node before migrate.
+                enum:
+                - HotOnly
+                - DeallocateIfNeeded
+                type: string
+              cloud:
+                description: Cloud selects the backing provider implementation.
+                enum:
+                - aws
+                - azure
+                type: string
+              disableSourceDestCheck:
+                default: true
+                description: |-
+                  DisableSourceDestCheck (AWS) / EnableIPForwarding (Azure). Defaults
+                  to true: required for UPF interfaces carrying tunnelled traffic.
+                type: boolean
+              networkFunction:
+                description: NetworkFunction identifies which 5G interface this pool
+                  feeds.
+                enum:
+                - n3
+                - n4
+                - n6
+                - n9
+                type: string
+              nodeSelector:
+                description: |-
+                  NodeSelector restricts which Kubernetes nodes the controller may
+                  pre-attach warm NICs to. Required for Azure where the NIC must be
+                  bound to a VM model before it is usable; ignored on AWS.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              refillPolicy:
+                default: Always
+                description: |-
+                  RefillPolicy describes whether the controller actively keeps Size
+                  available NICs ("Always") or only honours explicit growth ("Manual").
+                enum:
+                - Always
+                - Manual
+                type: string
+              region:
+                description: Region is the cloud region (e.g. "us-east-1" or "eastus").
+                type: string
+              resourceGroup:
+                description: ResourceGroup is used only when Cloud=azure.
+                type: string
+              securityGroups:
+                description: SecurityGroups are SG IDs (AWS) or NSG resource IDs (Azure).
+                items:
+                  type: string
+                type: array
+              size:
+                description: |-
+                  Size is the warm pool target. The controller maintains
+                  len(available) + len(claimed) == Size.
+                format: int32
+                minimum: 0
+                type: integer
+              subnet:
+                description: |-
+                  Subnet is the cloud subnet identifier: a "subnet-xxx" ID on AWS,
+                  or the full /subscriptions/.../subnets/<name> ARM resource ID on Azure.
+                type: string
+              subscriptionID:
+                description: |-
+                  SubscriptionID is used only when Cloud=azure. If unset, the value
+                  from AZURE_SUBSCRIPTION_ID env var is used.
+                type: string
+              zone:
+                description: |-
+                  Zone is the Availability Zone (AWS) or Zone (Azure). Optional but
+                  strongly recommended: a pool that spans zones loses its data-locality
+                  guarantees and may pre-attach NICs to the wrong VM.
+                type: string
+            required:
+            - cloud
+            - networkFunction
+            - size
+            - subnet
+            type: object
+          status:
+            description: CloudNICPoolStatus reflects the observed state.
+            properties:
+              available:
+                description: Available NICs are unclaimed and ready to be bound to
+                  a claim.
+                items:
+                  description: CloudNICEntry records a single NIC in the pool, mirrored
+                    from the cloud.
+                  properties:
+                    attachedNode:
+                      description: |-
+                        AttachedNode is the Kubernetes node currently hosting the NIC, or
+                        empty if the NIC is unattached.
+                      type: string
+                    claimedBy:
+                      description: ClaimedBy is set only when this entry is in the
+                        .status.claimed list.
+                      type: string
+                    ip:
+                      type: string
+                    nicID:
+                      description: NICID is the cloud-native identifier (eni-xxx or
+                        ARM resource ID).
+                      type: string
+                  required:
+                  - nicID
+                  type: object
+                type: array
+              availableCount:
+                description: |-
+                  AvailableCount / ClaimedCount are denormalised lengths used by
+                  kubectl get printer columns (.status.available is an array, which
+                  cannot be rendered as type=integer in a CRD print column).
+                format: int32
+                type: integer
+              claimed:
+                description: Claimed NICs are currently bound to a CloudNICClaim.
+                items:
+                  description: CloudNICEntry records a single NIC in the pool, mirrored
+                    from the cloud.
+                  properties:
+                    attachedNode:
+                      description: |-
+                        AttachedNode is the Kubernetes node currently hosting the NIC, or
+                        empty if the NIC is unattached.
+                      type: string
+                    claimedBy:
+                      description: ClaimedBy is set only when this entry is in the
+                        .status.claimed list.
+                      type: string
+                    ip:
+                      type: string
+                    nicID:
+                      description: NICID is the cloud-native identifier (eni-xxx or
+                        ARM resource ID).
+                      type: string
+                  required:
+                  - nicID
+                  type: object
+                type: array
+              claimedCount:
+                format: int32
+                type: integer
+              conditions:
+                description: Conditions report the pool's high-level health.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration tracks the last spec the controller
+                  reconciled.
+                format: int64
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: cloudnicclaims.upf.ahihi.ahuhu
+spec:
+  group: upf.ahihi.ahuhu
+  names:
+    kind: CloudNICClaim
+    listKind: CloudNICClaimList
+    plural: cloudnicclaims
+    shortNames:
+    - cnc
+    singular: cloudnicclaim
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.poolRef.name
+      name: Pool
+      type: string
+    - jsonPath: .spec.targetNode
+      name: Node
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.ip
+      name: IP
+      type: string
+    - jsonPath: .status.macAddress
+      name: MAC
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: CloudNICClaim is the Schema for the cloudnicclaims API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudNICClaimSpec is the desired claim.
+            properties:
+              poolRef:
+                description: PoolRef selects the CloudNICPool to allocate from.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              targetCluster:
+                description: |-
+                  TargetCluster is informational (Karmada member cluster name).
+                  The actual attach happens via the cloud SDK against TargetNode.
+                type: string
+              targetNode:
+                description: |-
+                  TargetNode is the Kubernetes node the NIC must be attached to.
+                  The pool controller picks a warm NIC and, if needed, performs a
+                  detach/re-attach so the NIC ends up on the right node.
+                type: string
+            required:
+            - poolRef
+            - targetNode
+            type: object
+          status:
+            description: CloudNICClaimStatus exposes the bound NIC details once allocation
+              succeeds.
+            properties:
+              attachedNode:
+                type: string
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              ip:
+                type: string
+              macAddress:
+                description: |-
+                  MACAddress is the NIC's MAC (canonical lower-case colon form). On Azure it
+                  only exists after the NIC is attached to a VM; the dynamic Multus NAD
+                  (host-device hwaddr) is generated from this value.
+                type: string
+              message:
+                type: string
+              nicID:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: CloudNICClaimPhase enumerates the lifecycle stages of
+                  a claim.
+                enum:
+                - Pending
+                - Bound
+                - Released
+                - Failed
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: ippools.upf.ahihi.ahuhu
+spec:
+  group: upf.ahihi.ahuhu
+  names:
+    kind: IPPool
+    listKind: IPPoolList
+    plural: ippools
+    singular: ippool
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              n3:
+                type: string
+              n4:
+                type: string
+              n6:
+                type: string
+            type: object
+          status:
+            properties:
+              usedIPs:
+                properties:
+                  n3:
+                    items:
+                      type: string
+                    type: array
+                  n4:
+                    items:
+                      type: string
+                    type: array
+                  n6:
+                    items:
+                      type: string
+                    type: array
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

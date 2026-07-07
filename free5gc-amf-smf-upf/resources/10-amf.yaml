@@ -1,0 +1,270 @@
+apiVersion: v1
+data:
+  amfcfg.yaml: |
+    info:
+      version: 1.0.9
+      description: AMF initial local configuration
+
+    configuration:
+      serviceNameList:
+        - namf-comm
+        - namf-evts
+        - namf-mt
+        - namf-loc
+        - namf-oam
+
+      ngapIpList:
+        - 0.0.0.0
+      ngapPort: 38412 # the SCTP port listened by NGAP
+      sbi:
+        scheme: http
+        registerIPv4: free5gc-free5gc-amf-service # IP used to register to NRF
+        bindingIPv4: 0.0.0.0  # IP used to bind the service
+        port: 80
+        tls:
+          key: ./cert/amf.key
+          pem: ./cert/amf.pem
+
+      nrfUri: http://nrf-nnrf:8000
+      nrfCertPem: cert/nrf.pem
+      amfName: AMF
+      serviceNameList:
+        - namf-comm
+        - namf-evts
+        - namf-mt
+        - namf-loc
+        - namf-oam
+      servedGuamiList:
+        - plmnId:
+            mcc: 208
+            mnc: 93
+          amfId: cafe00
+      supportTaiList:
+        - plmnId:
+            mcc: 208
+            mnc: 93
+          tac: 000001
+      plmnSupportList:
+        - plmnId:
+            mcc: 208
+            mnc: 93
+          snssaiList:
+            - sst: 1
+              sd: 010203
+            - sst: 1
+              sd: 112233
+      supportDnnList:
+        - internet
+      security:
+        integrityOrder:
+          - NIA2
+        cipheringOrder:
+          - NEA0
+      networkName:
+        full: free5GC
+        short: free
+      ngapIE: # Optional NGAP IEs
+        mobilityRestrictionList: # Mobility Restriction List IE, refer to TS 38.413
+          enable: true # append this IE in related message or not
+        maskedIMEISV: # Masked IMEISV IE, refer to TS 38.413
+          enable: true # append this IE in related message or not
+        redirectionVoiceFallback: # Redirection Voice Fallback IE, refer to TS 38.413
+          enable: false # append this IE in related message or not
+      nasIE: # Optional NAS IEs
+        networkFeatureSupport5GS: # 5gs Network Feature Support IE, refer to TS 24.501
+          enable: true # append this IE in Registration accept or not
+          length: 1 # IE content length (uinteger, range: 1~3)
+          imsVoPS: 0 # IMS voice over PS session indicator (uinteger, range: 0~1)
+          emc: 0 # Emergency service support indicator for 3GPP access (uinteger, range: 0~3)
+          emf: 0 # Emergency service fallback indicator for 3GPP access (uinteger, range: 0~3)
+          iwkN26: 0 # Interworking without N26 interface indicator (uinteger, range: 0~1)
+          mpsi: 0 # MPS indicator (uinteger, range: 0~1)
+          emcN3: 0 # Emergency service support indicator for Non-3GPP access (uinteger, range: 0~1)
+          mcsi: 0 # MCS indicator (uinteger, range: 0~1)
+      t3502Value: 720
+      t3512Value: 3600
+      non3gppDeregTimerValue: 3240
+      # retransmission timer for paging message
+      t3513:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      # retransmission timer for NAS Registration Accept message
+      t3522:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      # retransmission timer for NAS Registration Accept message
+      t3550:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      # retransmission timer for NAS Configuration Update Command message
+      t3555:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      # retransmission timer for NAS Authentication Request/Security Mode Command message
+      t3560:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      # retransmission timer for NAS Notification message
+      t3565:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      t3570:
+        enable: true     # true or false
+        expireTime: 6s   # default is 6 seconds
+        maxRetryTimes: 4 # the max number of retransmission
+      locality: area1 # Name of the location where a set of AMF, SMF, PCF and UPFs are located
+      sctp: # set the sctp server setting <optinal>, once this field is set, please also add maxInputStream, maxOsStream, maxAttempts, maxInitTimeOut
+        numOstreams: 3 # the maximum out streams of each sctp connection
+        maxInstreams: 5 # the maximum in streams of each sctp connection
+        maxAttempts: 2 # the maximum attempts of each sctp connection
+        maxInitTimeout: 2 # the maximum init timeout of each sctp connection
+      defaultUECtxReq: false # the default value of UE Context Request to decide when triggering Initial Context Setup procedure
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: free5gc
+    meta.helm.sh/release-namespace: 5gcore
+  labels:
+    app: free5gc
+    app.kubernetes.io/managed-by: Helm
+  name: free5gc-free5gc-amf-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-amf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-amf-0.2.7
+    nf: amf
+    project: free5gc
+  name: free5gc-free5gc-amf-amf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-amf
+      nf: amf
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 2026ac037f93d6e116ca34a9774331ede3c616bfedffb6a81cb7b2730e32ae3a
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-amf
+        nf: amf
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/amfcfg.yaml
+          command:
+            - ./amf
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/amf:v4.0.0  # kpt-set: ${image-amf}
+          imagePullPolicy: Always
+          name: amf
+          ports:
+            - containerPort: 80
+              name: namf
+            - containerPort: 38412
+              name: n2
+              protocol: SCTP
+          resources:
+            requests:
+              cpu: 150m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-amf-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-amf-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-amf-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-amf-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-amf-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-amf-empty-volume
+        - name: free5gc-free5gc-amf-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: free5gc
+    meta.helm.sh/release-namespace: 5gcore
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-amf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-amf-0.2.7
+    k8slens-edit-resource-version: v1
+    nf: amf
+    project: free5gc
+  name: free5gc-free5gc-amf-service
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: http
+      nodePort: 31957
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: n2
+      nodePort: 31136
+      port: 38412
+      protocol: SCTP
+      targetPort: 38412
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-amf
+    nf: amf
+    project: free5gc
+  sessionAffinity: None
+  type: NodePort
+---

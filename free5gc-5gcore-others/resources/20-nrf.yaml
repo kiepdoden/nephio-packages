@@ -1,0 +1,175 @@
+apiVersion: v1
+data:
+  nrfcfg.yaml: |
+    info:
+      version: 1.0.2
+      description: NRF initial local configuration
+
+    configuration:
+      MongoDBName: free5gc
+      MongoDBUrl: mongodb://mongodb:27017
+
+      serviceNameList:
+        - nnrf-nfm
+        - nnrf-disc
+
+      sbi:
+        scheme: http
+        registerIPv4: nrf-nnrf # IP used to serve NFs or register to another NRF
+        bindingIPv4: 0.0.0.0  # IP used to bind the service
+        port: 8000
+        cert:
+          key: ./cert/nrf.key
+          pem: ./cert/nrf.pem
+        rootcert: # the local path of root CA certs
+          pem: cert/nrf.pem
+          key: cert/nrf.key
+        oauth: false
+      DefaultPlmnId:
+        mcc: 208
+        mnc: 93
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: free5gc-free5gc-nrf-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nrf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nrf-0.2.7
+    nf: nrf
+    project: free5gc
+  name: nrf-nnrf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: http
+      nodePort: 30348
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-nrf
+    nf: nrf
+    project: free5gc
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-nrf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-nrf-0.2.7
+    nf: nrf
+    project: free5gc
+  name: free5gc-free5gc-nrf-nrf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-nrf
+      nf: nrf
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 9b63de8401e134fb765e6b60adcbb9a905997116c96d7c51d0b0722461b6e9c4
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-nrf
+        nf: nrf
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/nrfcfg.yaml
+          command:
+            - ./nrf
+          env:
+            - name: DB_URI
+              value: mongodb://mongodb/free5gc
+            - name: GIN_MODE
+              value: release
+          image: free5gc/nrf:v4.0.1  # kpt-set: ${image-nrf}
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: nrf
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            failureThreshold: 40
+            httpGet:
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-nrf-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-nrf-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-nrf-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - until nc -z $DEPENDENCIES; do echo waiting for the MongoDB; sleep 2; done;
+          env:
+            - name: DEPENDENCIES
+              value: mongodb:27017
+          image: busybox:1.32.0
+          name: wait-mongo
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-nrf-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-nrf-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-nrf-empty-volume
+        - name: free5gc-free5gc-nrf-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

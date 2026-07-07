@@ -1,0 +1,171 @@
+apiVersion: v1
+data:
+  smfcfg.yaml: "info:\n  version: 1.0.7\n  description: SMF initial local configuration\n\nconfiguration:\n  serviceNameList:\n    - nsmf-pdusession\n    - nsmf-event-exposure\n    - nsmf-oam\n\n  sbi:\n    scheme: http\n    registerIPv4: free5gc-free5gc-smf-service # IP used to register to NRF\n    bindingIPv4: 0.0.0.0  # IP used to bind the service\n    port: 80\n    tls:\n      key: ./cert/smf.key\n      pem: ./cert/smf.pem\n\n  nrfUri: http://nrf-nnrf:8000\n  nrfCertPem: ./cert/nrf.pem # NRF Certificate\n  urrPeriod: 10 # default usage report period in seconds\n  urrThreshold: 1000 # default usage report threshold in bytes\n  requestedUnit: 1000\n  pfcp:\n    nodeID: 192.168.50.12\n    listenAddr: 192.168.50.12\n    externalAddr: 192.168.50.12\n  smfName: SMF\n  snssaiInfos:\n    - sNssai:\n        sst: 1\n        sd: 010203\n      dnnInfos: # DNN information list\n        - dnn: internet # Data Network Name\n          dnaiList:\n            - mec\n          dns: # the IP address of DNS\n            ipv4: 8.8.8.8\n            ipv6: 2001:4860:4860::8888\n  plmnList: # the list of PLMN IDs that this SMF belongs to (optional, remove this key when unnecessary)\n    - mcc: 208 # Mobile Country Code (3 digits string, digit: 0~9)\n      mnc: 93 # Mobile Network Code (2 or 3 digits string, digit: 0~9)\n  userplaneInformation: # list of userplane information\n    upNodes: # information of userplane node (AN or UPF)\n      gNB1: # the name of the node\n        type: AN # the type of the node (AN or UPF)\n      UPF:\n        type: UPF\n        nodeID: 192.168.50.11 # PFCP address\n        addr: 192.168.50.11\n        sNssaiUpfInfos:\n          - sNssai:\n              sst: 1\n              sd: 010203\n            dnnUpfInfoList:\n              - dnn: internet\n                pools:\n                  - cidr: 10.50.0.0/16\n                staticPools:\n                  - cidr: 10.50.100.0/24\n\n        interfaces:\n          - interfaceType: N3\n            endpoints:\n              - 192.168.40.11\n            networkInstances: \n              - internet\n      \n    links:\n      - A: gNB1\n        B: UPF\n  locality: area1 # Name of the location where a set of AMF, SMF and UPFs are located\n  t3591:\n    enable: true # true or false\n    expireTime: 16s # default is 6 seconds\n    maxRetryTimes: 3 # the max number of retransmission\n  # retransmission timer for pdu session release command\n  t3592:\n    enable: true # true or false\n    expireTime: 16s # default is 6 seconds\n    maxRetryTimes: 3 # the max number of retransmission\n\nlogger:\n  enable: true\n  level: trace\n  reportCaller: false\n"
+  uerouting.yaml: "info:\n  version: 1.0.7\n  description: Routing information for UE\nueRoutingInfo:\n  UE1: # Group Name\n    members:\n    - imsi-208930000000001 # Subscription Permanent Identifier of the UE\n    topology: # Network topology for this group (Uplink: A->B, Downlink: B->A)\n    # default path derived from this topology\n    # node name should be consistent with smfcfg.yaml\n      - A: gNB1\n        B: BranchingUPF\n      - A: BranchingUPF\n        B: AnchorUPF1\n    specificPath:\n      - dest: 1.0.0.1/32\n        path: [BranchingUPF, AnchorUPF2]\n  \n  UE2: # Group Name\n    members:\n    - imsi-208930000000004 # Subscription Permanent Identifier of the UE\n    topology: # Network topology for this group (Uplink: A->B, Downlink: B->A)\n    # default path derived from this topology\n    # node name should be consistent with smfcfg.yaml\n      - A: gNB1\n        B: BranchingUPF\n      - A: BranchingUPF\n        B: AnchorUPF1\n    specificPath:\n      - dest: 10.100.100.16/32 # the destination IP address on Data Network (DN)\n        # the order of UPF nodes in this path. We use the UPF's name to represent each UPF node.\n        # The UPF's name should be consistent with smfcfg.yaml\n        path: [BranchingUPF, AnchorUPF2]\n"
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: free5gc
+    meta.helm.sh/release-namespace: 5gcore
+  labels:
+    app: free5gc
+    app.kubernetes.io/managed-by: Helm
+  name: free5gc-free5gc-smf-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-smf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-smf-0.2.7
+    nf: smf
+    project: free5gc
+  name: free5gc-free5gc-smf-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-smf
+    nf: smf
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-smf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-smf-0.2.7
+    nf: smf
+    project: free5gc
+  name: free5gc-free5gc-smf-smf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-smf
+      nf: smf
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: d7b3ad5b793298325ada1450d3a65990b3b8ee0f56a69829d2f903ac47c3ef14
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "n4network-free5gc-free5gc-smf", "interface": "n4", "ips": [ "192.168.50.12" ], "gateway": [ "192.168.50.1" ] }]'
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-smf
+        nf: smf
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/smfcfg.yaml
+            - -u
+            - ./config/uerouting.yaml
+          command:
+            - ./smf
+          env:
+            - name: GIN_MODE
+              value: release
+          image: kiemtcb/smf:v4.0.0-sdn  # kpt-set: ${image-smf}
+          imagePullPolicy: Always
+          name: smf
+          ports:
+            - containerPort: 80
+              name: nsmf
+            - containerPort: 8805
+              name: n4
+              protocol: UDP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-smf-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-smf-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-smf-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-smf-volume
+          projected:
+            sources:
+              - configMap:
+                  items:
+                    - key: smfcfg.yaml
+                      path: smfcfg.yaml
+                    - key: uerouting.yaml
+                      path: uerouting.yaml
+                  name: free5gc-free5gc-smf-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-smf-empty-volume
+        - name: free5gc-free5gc-smf-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  annotations:
+    meta.helm.sh/release-name: free5gc
+    meta.helm.sh/release-namespace: 5gcore
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: n4network-free5gc-free5gc-smf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.0",
+      "type": "ipvlan",
+      "master": "ens6",
+      "mode": "l2",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.50.0/24",
+        "routes": [
+          {
+            "dst": "192.168.51.0/24",
+            "gw": "192.168.50.1"
+          },
+          {
+            "dst": "10.60.51.0/24",
+            "gw": "192.168.50.1"
+          }
+        ]
+      }
+    }

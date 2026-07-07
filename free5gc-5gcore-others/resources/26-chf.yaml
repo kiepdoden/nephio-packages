@@ -1,0 +1,147 @@
+apiVersion: v1
+data:
+  chfcfg.yaml: "info:\n  version: 1.0.3\n  description: CHF initial local configuration\n\nconfiguration:\n  chfName: CHF # the name of this CHF\n  sbi: # Service-based interface information\n    scheme: http # the protocol for sbi (http or https)\n    registerIPv4: free5gc-free5gc-chf-service # IP used to register to NRF\n    bindingIPv4: 0.0.0.0 # IP used to bind the service\n    port: 80 # port used to bind the service\n    tls: # the local path of TLS key\n      pem: ./cert/chf.pem # CHF TLS Certificate\n      key: ./cert/chf.key # CHF TLS Private key\n\n  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF\n  nrfCertPem: ./nrf-cert/nrf.pem # NRF Certificate\n  serviceNameList: # the SBI services provided by this CHF, refer to TS 32.291\n    - nchf-convergedcharging # Nchf_AMPolicyControl service\n  mongodb: # the mongodb connected by this CHF\n    name: free5gc # name of the mongodb\n    url: mongodb://mongodb:27017 # a valid URL of the mongodb\n  \n  quotaValidityTime: 10000\n  volumeLimit: 50000\n  volumeLimitPDU: 10000\n  volumeThresholdRate: 0.8\n\n  cgf:\n    enable: true\n    hostIPv4: webui-nbiling\n    port: 2122\n    listenPort: 2121\n    passiveTransferPortRange:\n      start: 2123\n      end: 2130\n    tls:\n      pem: ./cert/chf.pem\n      key: ./cert/chf.key\n    cdrFilePath: /tmp\n  abmfDiameter:\n    protocol: tcp\n    hostIPv4: 0.0.0.0\n    port: 3868\n    tls:\n      pem: ./cert/chf.pem\n      key: ./cert/chf.key\n  rfDiameter:\n    protocol: tcp\n    hostIPv4: 0.0.0.0\n    port: 3869\n    tls:\n      pem: ./cert/chf.pem # CHF TLS Certificate\n      key: ./cert/chf.key # CHF TLS Private key\n\nlogger: # log output setting\n  enable: true\n  level: info\n  reportCaller: false\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: free5gc-free5gc-chf-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-chf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-chf-0.1.0
+    nf: chf
+    project: free5gc
+  name: free5gc-free5gc-chf-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-chf
+    nf: chf
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-chf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-chf-0.1.0
+    nf: chf
+    project: free5gc
+  name: webui-ncgf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: webui-ncgf
+      port: 2121
+      protocol: TCP
+      targetPort: 2121
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-chf
+    nf: chf
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-chf
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-chf-0.1.0
+    nf: chf
+    project: free5gc
+  name: free5gc-free5gc-chf-chf
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-chf
+      nf: chf
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 5f330f4cef3a802fdb44277c983d3cffd455c6f8c21b8577e07696a4016f6173
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-chf
+        nf: chf
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/chfcfg.yaml
+          command:
+            - ./chf
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/chf:v4.0.1  # kpt-set: ${image-chf}
+          imagePullPolicy: Always
+          name: chf
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-chf-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-chf-empty-volume
+            - mountPath: /free5gc/nrf-cert
+              name: free5gc-free5gc-chf-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-chf-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-chf-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-chf-empty-volume
+        - name: free5gc-free5gc-chf-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

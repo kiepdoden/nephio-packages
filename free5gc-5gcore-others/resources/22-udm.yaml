@@ -1,0 +1,157 @@
+apiVersion: v1
+data:
+  udmcfg.yaml: |
+    info:
+      version: 1.0.3
+      description: UDM initial local configuration
+
+    configuration:
+      serviceNameList:
+        - nudm-sdm
+        - nudm-uecm
+        - nudm-ueau
+        - nudm-ee
+        - nudm-pp
+
+      sbi:
+        scheme: http
+        registerIPv4: free5gc-free5gc-udm-service # IP used to register to NRF
+        bindingIPv4: 0.0.0.0  # IP used to bind the service
+        port: 80
+        tls:
+          key: ./cert/udm.key
+          pem: ./cert/udm.pem
+
+      nrfUri: http://nrf-nnrf:8000
+      nrfCertPem: cert/nrf.pem
+      # test data set from TS33501-f60 Annex C.4
+      SuciProfile:
+        - ProtectionScheme: 1 # Protect Scheme: Profile A
+          PrivateKey: c53c22208b61860b06c62e5406a7b330c2b577aa5558981510d128247d38bd1d
+          PublicKey: 5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650
+        - ProtectionScheme: 2 # Protect Scheme: Profile B
+          PrivateKey: F1AB1074477EBCC7F554EA1C5FC368B1616730155E0041AC447D6301975FECDA
+          PublicKey: 0472DA71976234CE833A6907425867B82E074D44EF907DFB4B3E21C1C2256EBCD15A7DED52FCBB097A4ED250E036C7B9C8C7004C4EEDC4F068CD7BF8D3F900E3B4
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+kind: ConfigMap
+metadata:
+  labels:
+    app: free5gc
+  name: free5gc-free5gc-udm-configmap
+  namespace: 5gcore  # kpt-set: ${namespace}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-udm
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-udm-0.2.7
+    nf: udm
+    project: free5gc
+  name: free5gc-free5gc-udm-service
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/name: free5gc-udm
+    nf: udm
+    project: free5gc
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-udm
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-udm-0.2.7
+    nf: udm
+    project: free5gc
+  name: free5gc-free5gc-udm-udm
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-udm
+      nf: udm
+      project: free5gc
+  template:
+    metadata:
+      annotations:
+        checksum/config: 513dd7c00025f2188684ad1ce85a5f42102f8900f08d184c10805b1183244761
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-udm
+        nf: udm
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - -c
+            - ./config/udmcfg.yaml
+          command:
+            - ./udm
+          env:
+            - name: GIN_MODE
+              value: release
+          image: free5gc/udm:v4.0.1  # kpt-set: ${image-udm}
+          imagePullPolicy: Always
+          name: udm
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+          volumeMounts:
+            - mountPath: /free5gc/config/
+              name: free5gc-free5gc-udm-volume
+            - mountPath: /free5gc/config/TLS
+              name: free5gc-free5gc-udm-empty-volume
+            - mountPath: /free5gc/cert
+              name: free5gc-free5gc-udm-cert-pvc
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
+          env:
+            - name: DEPENDENCIES
+              value: http://nrf-nnrf:8000
+          image: curlimages/curl:8.7.1
+          name: wait-nrf
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []
+      volumes:
+        - name: free5gc-free5gc-udm-volume
+          projected:
+            sources:
+              - configMap:
+                  name: free5gc-free5gc-udm-configmap
+        - emptyDir: {}
+          name: free5gc-free5gc-udm-empty-volume
+        - name: free5gc-free5gc-udm-cert-pvc
+          persistentVolumeClaim:
+            claimName: cert-pvc

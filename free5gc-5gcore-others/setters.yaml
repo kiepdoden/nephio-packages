@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: setters
+  annotations:
+    config.kubernetes.io/local-config: "true"
+data:
+  # Namespace shared by all NFs in this package
+  namespace: 5gcore
+  # NFS server backing the shared cert/mongo PersistentVolumes
+  nfs-server: 192.168.10.10
+  # Container images
+  image-mongodb: docker.io/bitnami/mongodb:latest
+  image-nrf: free5gc/nrf:v4.0.1
+  image-udr: free5gc/udr:v4.0.1
+  image-udm: free5gc/udm:v4.0.1
+  image-ausf: free5gc/ausf:v4.0.1
+  image-pcf: free5gc/pcf:v4.0.1
+  image-nssf: free5gc/nssf:v4.0.1
+  image-chf: free5gc/chf:v4.0.1
+  image-nef: free5gc/nef:v4.0.1
+  image-dbpython: towards5gs/free5gc-dbpython:latest
+  image-webui: free5gc/webui:v4.0.1

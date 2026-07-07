@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: free5gc
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: free5gc-dbpython
+    app.kubernetes.io/version: latest
+    helm.sh/chart: free5gc-dbpython-0.1.0
+    nf: dbpython
+    project: free5gc
+  name: free5gc-free5gc-dbpython-dbpython
+  namespace: 5gcore  # kpt-set: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: free5gc
+      app.kubernetes.io/name: free5gc-dbpython
+      nf: dbpython
+      project: free5gc
+  template:
+    metadata:
+      annotations: null
+      labels:
+        app.kubernetes.io/instance: free5gc
+        app.kubernetes.io/name: free5gc-dbpython
+        nf: dbpython
+        project: free5gc
+    spec:
+      affinity: {}
+      containers:
+        - args:
+            - infinity
+          command:
+            - sleep
+          env:
+            - name: DB_URI
+              value: mongodb://mongodb:27017
+          image: towards5gs/free5gc-dbpython:latest  # kpt-set: ${image-dbpython}
+          imagePullPolicy: Always
+          name: dbpython
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext: {}
+      dnsPolicy: ClusterFirst
+      imagePullSecrets: []
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - until nc -z $DEPENDENCIES; do echo waiting for the MongoDB; sleep 2; done;
+          env:
+            - name: DEPENDENCIES
+              value: mongodb:27017
+          image: busybox:1.32.0
+          name: wait-mongo
+      nodeSelector: {}
+      restartPolicy: Always
+      securityContext: {}
+      tolerations: []

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-upf-configmap
+  namespace: default # kpt-set: ${upf-namespace}
+data:
+  config.yaml: |
+    pfcp:
+      addr: "192.168.50.11"
+      nodeID: "192.168.50.11"
+      retransTimeout: 1s
+      maxRetrans: 3
+    gtpu:
+      forwarder: "wmnsk/go-gtp"
+      tunInterfaceName: upf
+      ifList:
+        - addr: "192.168.40.11"
+          type: N3
+    dnnList:
+      - dnn: "internet"
+        cidr: "10.60.0.0/16"
+    logger:
+      level: "TRACE"

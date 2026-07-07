@@ -1,0 +1,122 @@
+# CloudNICPool instances đang chạy thật trên cluster (kubectl get cloudnicpools -o yaml,
+# đã bỏ status/resourceVersion/uid — status.available là NIC warm-pool runtime, enipool-manager
+# tự refill lại khi apply).
+
+# ---- AWS: dùng khi Migrate.spec.cluster.location.multiCluster.cluster.name: cluster1 ----
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n3
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n3
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2 # kpt-set: ${aws-region}
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-003529ac1f69c118f
+  zone: us-east-2b
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n4
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n4
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2 # kpt-set: ${aws-region}
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-04c33a4a7b3725e23
+  zone: us-east-2b
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n6
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n6
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2 # kpt-set: ${aws-region}
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-0e1023d2e64cee5dc
+  zone: us-east-2b
+---
+# ---- Azure: dùng khi Migrate.spec.cluster.location.multiCluster.cluster.name: azure ----
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: azure-n3
+spec:
+  azureAttachPolicy: DeallocateIfNeeded
+  cloud: azure
+  disableSourceDestCheck: true
+  networkFunction: n3
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: eastus2 # kpt-set: ${azure-location}
+  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  size: 3
+  subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n3-41
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  zone: eastus-2
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: azure-n4
+spec:
+  azureAttachPolicy: DeallocateIfNeeded
+  cloud: azure
+  disableSourceDestCheck: true
+  networkFunction: n4
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: eastus2 # kpt-set: ${azure-location}
+  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  size: 3
+  subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n4-51
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  zone: eastus-2
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: azure-n6
+spec:
+  azureAttachPolicy: DeallocateIfNeeded
+  cloud: azure
+  disableSourceDestCheck: true
+  networkFunction: n6
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: eastus2 # kpt-set: ${azure-location}
+  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  size: 3
+  subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n6-61
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  zone: eastus-2
