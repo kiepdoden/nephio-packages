@@ -267,4 +267,3 @@ spec:
     project: free5gc
   sessionAffinity: None
   type: NodePort
----
