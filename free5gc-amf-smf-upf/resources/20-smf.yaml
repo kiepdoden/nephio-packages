@@ -71,7 +71,15 @@ spec:
         nf: smf
         project: free5gc
     spec:
-      affinity: {}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - ip-192-168-10-12 # kpt-set: ${smf-node}
       containers:
         - args:
             - -c
@@ -116,7 +124,8 @@ spec:
               value: http://nrf-nnrf:8000
           image: curlimages/curl:8.7.1
           name: wait-nrf
-      nodeSelector: {}
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-10-12 # kpt-set: ${smf-node}
       restartPolicy: Always
       securityContext: {}
       tolerations: []

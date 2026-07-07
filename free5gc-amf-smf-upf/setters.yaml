@@ -13,3 +13,7 @@ data:
   image-amf: free5gc/amf:v4.0.0
   image-smf: kiemtcb/smf:v4.0.0-sdn
   image-upf: docker.io/kiemtcb/upf-test:nextmn-test-not-debug
+  # Node pinning: SMF ghim cứng vào node này (nodeSelector + nodeAffinity In).
+  # UPF không ghim node riêng — chỉ tránh đúng node SMF đang chạy (nodeAffinity NotIn,
+  # dùng chung giá trị này) để 2 NF luôn nằm khác node nhau, không hard-code node UPF.
+  smf-node: ip-192-168-10-12

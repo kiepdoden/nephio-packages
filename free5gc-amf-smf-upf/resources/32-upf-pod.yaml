@@ -34,7 +34,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: NotIn
                 values:
-                  - ip-192-168-10-12
+                  - ip-192-168-10-12 # kpt-set: ${smf-node}
   containers:
     - name: upf-test-container
       image: docker.io/kiemtcb/upf-test:nextmn-test-not-debug  # kpt-set: ${image-upf}
