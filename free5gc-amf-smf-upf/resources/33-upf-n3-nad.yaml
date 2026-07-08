@@ -2,7 +2,7 @@ apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
   name: n3-conf
-  namespace: default
+  namespace: default # kpt-set: ${upf-namespace}
 spec:
   config: |-
     {

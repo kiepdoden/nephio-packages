@@ -11,7 +11,7 @@ metadata:
     app: free5gc
     app.kubernetes.io/managed-by: Helm
   name: free5gc-free5gc-smf-configmap
-  namespace: 5gcore
+  namespace: 5gcore # kpt-set: ${namespace}
 ---
 apiVersion: v1
 kind: Service
@@ -25,7 +25,7 @@ metadata:
     nf: smf
     project: free5gc
   name: free5gc-free5gc-smf-service
-  namespace: 5gcore
+  namespace: 5gcore # kpt-set: ${namespace}
 spec:
   ports:
     - name: http
@@ -39,113 +39,6 @@ spec:
     project: free5gc
   type: ClusterIP
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app.kubernetes.io/instance: free5gc
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: free5gc-smf
-    app.kubernetes.io/version: latest
-    helm.sh/chart: free5gc-smf-0.2.7
-    nf: smf
-    project: free5gc
-  name: free5gc-free5gc-smf-smf
-  namespace: 5gcore
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: free5gc
-      app.kubernetes.io/name: free5gc-smf
-      nf: smf
-      project: free5gc
-  template:
-    metadata:
-      annotations:
-        checksum/config: d7b3ad5b793298325ada1450d3a65990b3b8ee0f56a69829d2f903ac47c3ef14
-        k8s.v1.cni.cncf.io/networks: '[ { "name": "n4network-free5gc-free5gc-smf", "interface": "n4", "ips": [ "192.168.50.12" ], "gateway": [ "192.168.50.1" ] }]'
-      labels:
-        app.kubernetes.io/instance: free5gc
-        app.kubernetes.io/name: free5gc-smf
-        nf: smf
-        project: free5gc
-    spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - ip-192-168-10-12
-      containers:
-        - args:
-            - -c
-            - ./config/smfcfg.yaml
-            - -u
-            - ./config/uerouting.yaml
-          command:
-            - ./smf
-          env:
-            - name: GIN_MODE
-              value: release
-          image: kiemtcb/smf:v4.0.0-sdn
-          imagePullPolicy: Always
-          name: smf
-          ports:
-            - containerPort: 80
-              name: nsmf
-            - containerPort: 8805
-              name: n4
-              protocol: UDP
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          securityContext: {}
-          volumeMounts:
-            - mountPath: /free5gc/config/
-              name: free5gc-free5gc-smf-volume
-            - mountPath: /free5gc/config/TLS
-              name: free5gc-free5gc-smf-empty-volume
-            - mountPath: /free5gc/cert
-              name: free5gc-free5gc-smf-cert-pvc
-      dnsPolicy: ClusterFirst
-      imagePullSecrets: []
-      initContainers:
-        - command:
-            - sh
-            - -c
-            - set -x; for dependency in $DEPENDENCIES; do while [ $(curl --insecure --connect-timeout 1 -s -o /dev/null -w "%{http_code}" $dependency) -ne 200 ]; do echo waiting for dependencies; sleep 1; done; done;
-          env:
-            - name: DEPENDENCIES
-              value: http://nrf-nnrf:8000
-          image: curlimages/curl:8.7.1
-          name: wait-nrf
-      nodeSelector:
-        kubernetes.io/hostname: ip-192-168-10-12
-      restartPolicy: Always
-      securityContext: {}
-      tolerations: []
-      volumes:
-        - name: free5gc-free5gc-smf-volume
-          projected:
-            sources:
-              - configMap:
-                  items:
-                    - key: smfcfg.yaml
-                      path: smfcfg.yaml
-                    - key: uerouting.yaml
-                      path: uerouting.yaml
-                  name: free5gc-free5gc-smf-configmap
-        - emptyDir: {}
-          name: free5gc-free5gc-smf-empty-volume
-        - name: free5gc-free5gc-smf-cert-pvc
-          persistentVolumeClaim:
-            claimName: cert-pvc
----
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -155,7 +48,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: Helm
   name: n4network-free5gc-free5gc-smf
-  namespace: 5gcore
+  namespace: 5gcore # kpt-set: ${namespace}
 spec:
   config: |-
     {

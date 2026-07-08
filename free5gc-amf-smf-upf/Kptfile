@@ -5,7 +5,7 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
 info:
-  description: free5GC AMF (package name kept as free5gc-amf-smf-upf for continuity; SMF/UPF moved out to manual-smf-upf/, not managed by Nephio)
+  description: free5GC AMF + config/NAD for SMF and UPF (SMF Deployment and UPF Pod themselves live in manual-smf-upf/, not managed by Nephio)
 pipeline:
   mutators:
     - image: ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2

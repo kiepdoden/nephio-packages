@@ -5,7 +5,9 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
 data:
-  # Namespace of AMF, shared with package free5gc-5gcore-others
+  # Namespace of AMF/SMF ConfigMap+Service+NAD, shared with package free5gc-5gcore-others
   namespace: 5gcore
+  # Namespace of UPF ConfigMap/NAD (matches live cluster: UPF runs in `default`, not `5gcore`)
+  upf-namespace: default
   # Container image
   image-amf: free5gc/amf:v4.0.0
