@@ -26,41 +26,48 @@ Nội dung được export từ cụm Kubernetes đang chạy thật (namespace 
 trên server 5g-control-plane, xem `kubectl get all -n 5gcore`) và cấu trúc
 lại theo chuẩn kpt package (tham khảo `bactp/workload-catalog`).
 
-## Thứ tự resource (quan trọng)
+## Storage — dynamic provisioning (StorageClass), không dùng static PV
 
-File trong `resources/` được đánh số để **PersistentVolume luôn đứng trước**
-mọi thứ khác — khác với repo mẫu `bactp/workload-catalog` (dùng
-`volumeClaimTemplates` + StorageClass động cho MongoDB, không cần PV tĩnh).
-Ở đây dùng PV tĩnh trỏ thẳng NFS thật (`192.168.10.10`), nên phải tồn tại
-**trước khi bất kỳ NF nào kịp chạy**, không phó thác cho apply-order ngầm của
-kubectl/kpt:
+> **Đổi so với bản đầu:** package này ban đầu dùng 2 `PersistentVolume` tĩnh
+> trỏ thẳng NFS server (`192.168.10.10`) của cluster gốc `5g-control-plane`.
+> Khi deploy sang cluster khác không reach được NFS đó, 2 PV này kẹt mãi ở
+> trạng thái `Available`, không PVC nào bind được → toàn bộ NF không khởi
+> động nổi. Đã đổi lại **đúng theo cách package mẫu `bactp/workload-catalog`
+> làm** (xem thảo luận trước): dùng dynamic provisioning qua StorageClass,
+> portable — chạy được trên bất kỳ cluster nào miễn có StorageClass phù hợp.
 
-```
-00-pv-cert.yaml    # PersistentVolume free5gc-pv-cert (NFS /var/nfs/general/cert)
-01-pv-mongo.yaml   # PersistentVolume free5gc-pv-mongo (NFS /var/nfs/general/mongo)
-02-common.yaml     # Namespace 5gcore + PVC cert-pvc (bind vào PV ở trên)
-10-mongodb.yaml    # StatefulSet mongodb (PVC riêng, tự bind vào free5gc-pv-mongo)
-20-nrf.yaml ...    # các NF còn lại
-```
+- **MongoDB**: `volumeClaimTemplates` trong StatefulSet, **không set
+  `storageClassName`** → tự dùng StorageClass mặc định (`default`) của
+  cluster đích. Không cần setter riêng.
+- **`cert-pvc`** (dùng chung bởi mọi NF để đọc TLS cert): PVC với
+  `storageClassName: longhorn # kpt-set: ${storage-class}` — đổi setter
+  `storage-class` trong `setters.yaml` nếu cluster đích không có SC tên
+  `longhorn`.
+
+> **Lưu ý quan trọng:** `cert-pvc` dùng `accessModes: ReadOnlyMany` vì nhiều
+> Pod (NRF, UDR, AMF, SMF...) trên **nhiều node khác nhau** cùng mount đọc
+> volume này. StorageClass dynamic-provision phải hỗ trợ `ReadOnlyMany`/
+> `ReadWriteMany` (Longhorn hỗ trợ qua Share Manager/NFS backend, nhưng
+> **không phải StorageClass Longhorn mặc định nào cũng bật sẵn** tính năng
+> này). Nếu PVC `cert-pvc` kẹt `Pending` sau khi đổi cluster, kiểm tra
+> StorageClass đích có hỗ trợ RWX/ROX không — nếu không, cần hoặc (a) đổi
+> sang StorageClass khác có hỗ trợ, hoặc (b) tách nhỏ thành cert riêng theo
+> kiểu bactp (bundled sẵn trong image / mount qua Secret thay vì PVC dùng
+> chung).
 
 ## Deploy
 
 ```bash
 cd free5gc-5gcore-others
-vi setters.yaml               # chỉnh namespace/image/nfs-server nếu cần
+vi setters.yaml               # chỉnh namespace/image/storage-class nếu cần
 kpt fn render .
-
-# 1. PV trước tiên, trước cả namespace — theo đúng thứ tự file
-kubectl apply -f resources/00-pv-cert.yaml
-kubectl apply -f resources/01-pv-mongo.yaml
-
-# 2. Namespace + PVC — PV đã có sẵn nên bind ngay, không rơi vào Pending
-kubectl apply -f resources/02-common.yaml
-
-# 3. Phần còn lại (MongoDB, NRF, UDR, ...)
 kpt live init .                # lần đầu
 kpt live apply .
 ```
+
+Không còn bước apply PV riêng trước nữa — mọi thứ trong 1 lần `kpt live
+apply .`, thứ tự apply do kubectl/kpt tự lo (Namespace/PVC luôn đi trước
+workload nhờ cơ chế sắp xếp mặc định).
 
 Deploy package này **trước** `free5gc-amf-smf-upf`, vì AMF/SMF phụ thuộc NRF.
 
@@ -71,6 +78,3 @@ Deploy package này **trước** `free5gc-amf-smf-upf`, vì AMF/SMF phụ thuộ
   các giá trị này không được expose qua `setters.yaml` (giữ đúng mức độ mà
   package `bactp/workload-catalog` mẫu áp dụng: chỉ setter hoá namespace/image,
   không setter hoá toàn bộ nested config).
-- `cert-pvc` (trong `02-common.yaml`) mount vào **mọi** NF để đọc TLS cert —
-  phải bind thành công (tức 2 PV ở `00-pv-cert.yaml`/`01-pv-mongo.yaml` phải
-  apply trước) trước khi NF nào khởi động, nếu không Pod sẽ kẹt `Pending`.

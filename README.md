@@ -19,7 +19,7 @@ mẫu [`bactp/workload-catalog`](https://github.com/bactp/workload-catalog).
 
 1. **Cilium (CNI) + Multus** — cài trước, ngoài phạm vi package này (Helm/addon riêng), mọi NAD/LoadBalancer trong các package dưới đây phụ thuộc 2 cái này.
 2. `karmada-control-plane` (nếu cần cross-cluster migrate — cần Secret cert tồn tại sẵn, xem README)
-3. `free5gc-5gcore-others` (PV → namespace/PVC → NRF/MongoDB/...)
+3. `free5gc-5gcore-others` (namespace → PVC dynamic-provision → NRF/MongoDB/...)
 4. `free5gc-amf-smf-upf` (phụ thuộc NRF ở bước 3)
 5. `5g-controllers` + `upf-migrate-manager` (độc lập, deploy trước/sau/song song đều được)
 

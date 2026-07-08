@@ -7,8 +7,11 @@ metadata:
 data:
   # Namespace shared by all NFs in this package
   namespace: 5gcore
-  # NFS server backing the shared cert/mongo PersistentVolumes
-  nfs-server: 192.168.10.10
+  # StorageClass dùng để dynamic-provision cert-pvc (ReadOnlyMany, dùng chung
+  # bởi mọi NF). MongoDB dùng StorageClass mặc định của cluster (không setter
+  # hoá riêng, xem README). Đổi giá trị này nếu cluster đích không có SC tên
+  # "longhorn" hoặc SC đó không hỗ trợ ReadOnlyMany.
+  storage-class: longhorn
   # Container images
   image-mongodb: docker.io/bitnami/mongodb:latest
   image-nrf: free5gc/nrf:v4.0.1

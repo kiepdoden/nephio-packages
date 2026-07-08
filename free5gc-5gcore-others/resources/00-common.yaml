@@ -13,9 +13,7 @@ metadata:
 spec:
   accessModes:
     - ReadOnlyMany
+  storageClassName: longhorn # kpt-set: ${storage-class}
   resources:
     requests:
       storage: 1Mi
-  selector:
-    matchLabels:
-      project: free5gc
