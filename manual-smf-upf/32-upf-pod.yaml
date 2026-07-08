@@ -34,7 +34,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: NotIn
                 values:
-                  - ip-192-168-10-12
+                  - ip-192-168-10-38.us-east-2.compute.internal
   containers:
     - name: upf-test-container
       image: docker.io/kiemtcb/upf-test:nextmn-test-not-debug

@@ -38,7 +38,7 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - ip-192-168-10-12
+                      - ip-192-168-10-38.us-east-2.compute.internal
       containers:
         - args:
             - -c
@@ -84,7 +84,7 @@ spec:
           image: curlimages/curl:8.7.1
           name: wait-nrf
       nodeSelector:
-        kubernetes.io/hostname: ip-192-168-10-12
+        kubernetes.io/hostname: ip-192-168-10-38.us-east-2.compute.internal
       restartPolicy: Always
       securityContext: {}
       tolerations: []
