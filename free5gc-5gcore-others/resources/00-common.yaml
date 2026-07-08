@@ -12,7 +12,7 @@ metadata:
   namespace: 5gcore  # kpt-set: ${namespace}
 spec:
   accessModes:
-    - ReadOnlyMany
+    - ReadWriteMany
   storageClassName: longhorn # kpt-set: ${storage-class}
   resources:
     requests:

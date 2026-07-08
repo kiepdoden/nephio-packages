@@ -33,8 +33,8 @@ lại theo chuẩn kpt package (tham khảo `bactp/workload-catalog`).
 > Khi deploy sang cluster khác không reach được NFS đó, 2 PV này kẹt mãi ở
 > trạng thái `Available`, không PVC nào bind được → toàn bộ NF không khởi
 > động nổi. Đã đổi lại **đúng theo cách package mẫu `bactp/workload-catalog`
-> làm** (xem thảo luận trước): dùng dynamic provisioning qua StorageClass,
-> portable — chạy được trên bất kỳ cluster nào miễn có StorageClass phù hợp.
+> làm**: dùng dynamic provisioning qua StorageClass, portable — chạy được
+> trên bất kỳ cluster nào miễn có StorageClass phù hợp.
 
 - **MongoDB**: `volumeClaimTemplates` trong StatefulSet, **không set
   `storageClassName`** → tự dùng StorageClass mặc định (`default`) của
@@ -44,16 +44,24 @@ lại theo chuẩn kpt package (tham khảo `bactp/workload-catalog`).
   `storage-class` trong `setters.yaml` nếu cluster đích không có SC tên
   `longhorn`.
 
-> **Lưu ý quan trọng:** `cert-pvc` dùng `accessModes: ReadOnlyMany` vì nhiều
-> Pod (NRF, UDR, AMF, SMF...) trên **nhiều node khác nhau** cùng mount đọc
-> volume này. StorageClass dynamic-provision phải hỗ trợ `ReadOnlyMany`/
-> `ReadWriteMany` (Longhorn hỗ trợ qua Share Manager/NFS backend, nhưng
-> **không phải StorageClass Longhorn mặc định nào cũng bật sẵn** tính năng
-> này). Nếu PVC `cert-pvc` kẹt `Pending` sau khi đổi cluster, kiểm tra
-> StorageClass đích có hỗ trợ RWX/ROX không — nếu không, cần hoặc (a) đổi
-> sang StorageClass khác có hỗ trợ, hoặc (b) tách nhỏ thành cert riêng theo
-> kiểu bactp (bundled sẵn trong image / mount qua Secret thay vì PVC dùng
-> chung).
+> **Lưu ý quan trọng — access mode:** `cert-pvc` dùng
+> `accessModes: ReadWriteMany` (**không phải `ReadOnlyMany`**). Đã thử
+> `ReadOnlyMany` trước nhưng **Longhorn CSI driver không hề implement access
+> mode này** (lỗi thật gặp phải: `access mode MULTI_NODE_READER_ONLY is not
+> supported`) — Longhorn chỉ hỗ trợ `ReadWriteOnce` và `ReadWriteMany` (qua
+> Share Manager/NFS backend), không có khái niệm "nhiều node, chỉ đọc". Vì
+> nhiều NF pod trên nhiều node khác nhau cùng cần đọc cert-pvc, `ReadWriteMany`
+> là lựa chọn khả thi duy nhất trên Longhorn (các pod vẫn tự mount
+> `readOnly: true` ở cấp volumeMount, PVC RWX chỉ nói "được phép", không bắt
+> buộc pod phải ghi).
+>
+> Nếu `cert-pvc` vẫn `Pending` sau khi đổi accessMode, khả năng cao Longhorn
+> Share Manager (thành phần cấp RWX) chưa được bật/cài trên cluster đích —
+> kiểm tra `kubectl get pods -n longhorn-system | grep share-manager`. Nếu
+> StorageClass đích hoàn toàn không hỗ trợ RWX, phương án dự phòng là bỏ
+> `cert-pvc` dùng chung, chuyển sang cert bundled sẵn trong image (kiểu
+> `bactp/workload-catalog`) hoặc Secret riêng — cần thiết kế lại, chưa làm
+> trong package này.
 
 ## Deploy
 
