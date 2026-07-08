@@ -34,8 +34,8 @@ Yêu cầu **trước khi apply**:
    `NextmnUPFMap`/`CloudNICPool`/`CloudNICClaim`/`IPPool` tồn tại trước).
 2. **`ConfigMap karmada-kubeconfig-configmap`** phải tồn tại thủ công trong
    namespace `upf-migrate-system` trước khi Deployment start được — đây là
-   kubeconfig do Karmada cấp (package `karmada-control-plane`) để manager
-   propagate resource sang member cluster. **Package này cố tình không tạo
+   kubeconfig do Karmada cấp (tự chạy `karmadactl init`, không quản lý qua
+   package Nephio nào cả) để manager propagate resource sang member cluster. **Package này cố tình không tạo
    ConfigMap đó** vì nó chứa dữ liệu kết nối/credential runtime, không phải
    config tĩnh nên không hợp lý để checked-in vào Git — tạo thủ công bằng:
    ```bash
@@ -44,5 +44,4 @@ Yêu cầu **trước khi apply**:
    kubectl create configmap karmada-kubeconfig-configmap \
      --from-file=kubeconfig=/tmp/karmada.kubeconfig -n upf-migrate-system
    ```
-   (tên secret thật tuỳ theo cách bạn khởi tạo Karmada — xem package
-   `karmada-control-plane`.)
+   (tên secret thật tuỳ theo cách bạn khởi tạo Karmada bằng `karmadactl init`.)

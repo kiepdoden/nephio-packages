@@ -6,7 +6,7 @@ validate the rendered YAML both for syntax and (best-effort) via
 import os, re, subprocess, sys, yaml
 
 ROOT = "/home/ubuntu/nephio-packages"
-PACKAGES = ["free5gc-5gcore-others", "free5gc-amf-smf-upf", "5g-controllers", "upf-migrate-manager", "karmada-control-plane"]
+PACKAGES = ["free5gc-5gcore-others", "free5gc-amf-smf-upf", "5g-controllers", "upf-migrate-manager"]
 
 SETTER_RE = re.compile(r"^(?P<prefix>\s*\S.*?:\s*)(?P<value>\S.*?)(?P<comment>\s*#\s*kpt-set:\s*\$\{(?P<name>[\w-]+)\})\s*$")
 

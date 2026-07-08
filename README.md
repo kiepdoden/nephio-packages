@@ -13,15 +13,23 @@ mẫu [`bactp/workload-catalog`](https://github.com/bactp/workload-catalog).
 | [`free5gc-amf-smf-upf`](free5gc-amf-smf-upf/) | AMF, SMF, UPF (custom NextMN) + NAD/ConfigMap của UPF |
 | [`5g-controllers`](5g-controllers/) | `agent` (checkpoint/restore DaemonSet), `migrate-controller` (Checkpoint/Restore CRD), `enipool-manager` + CR `CloudNICPool` |
 | [`upf-migrate-manager`](upf-migrate-manager/) | Controller chính `upf-migrate-controller-manager` (Migrate/Registration/NextmnUPFMap, gRPC `:7000`) |
-| [`karmada-control-plane`](karmada-control-plane/) | Shape Karmada hosted-mode (etcd, apiserver, controller-manager, scheduler, webhook) — **không** bundle Secret cert, xem README riêng |
+
+## Karmada — cố tình KHÔNG đóng gói
+
+Từng có package `karmada-control-plane` (shape Deployment/StatefulSet/Service
+export từ cluster live), nhưng đã **xoá bỏ hoàn toàn**: Karmada hosted-mode
+cài qua `karmadactl init`, tự sinh PKI (CA + cert liên kết nhau) lúc cài —
+copy shape YAML sang cluster khác vô nghĩa vì không có cert đi kèm, không
+portable. Quyết định: **tự chạy `karmadactl init` trực tiếp** trên cluster
+cần Karmada, không quản lý qua package Nephio.
 
 ## Thứ tự deploy khuyến nghị
 
 1. **Cilium (CNI) + Multus** — cài trước, ngoài phạm vi package này (Helm/addon riêng), mọi NAD/LoadBalancer trong các package dưới đây phụ thuộc 2 cái này.
-2. `karmada-control-plane` (nếu cần cross-cluster migrate — cần Secret cert tồn tại sẵn, xem README)
-3. `free5gc-5gcore-others` (namespace → PVC dynamic-provision → NRF/MongoDB/...)
-4. `free5gc-amf-smf-upf` (phụ thuộc NRF ở bước 3)
-5. `5g-controllers` + `upf-migrate-manager` (độc lập, deploy trước/sau/song song đều được)
+2. `free5gc-5gcore-others` (namespace → PVC dynamic-provision → NRF/MongoDB/...)
+3. `free5gc-amf-smf-upf` (phụ thuộc NRF ở bước 2)
+4. `5g-controllers` + `upf-migrate-manager` (độc lập, deploy trước/sau/song song đều được)
+5. Nếu cần cross-cluster/cross-cloud migrate: tự `karmadactl init` (xem ghi chú Karmada ở trên) trước khi `upf-migrate-manager` dùng được tính năng multi-cluster — xem README package đó về `karmada-kubeconfig-configmap`.
 
 Mỗi package tự chứa `Kptfile` + `setters.yaml` + `README.md` riêng, xem chi tiết trong từng thư mục.
 
