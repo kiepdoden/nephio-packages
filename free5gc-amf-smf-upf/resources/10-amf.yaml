@@ -248,6 +248,7 @@ metadata:
     nf: amf
     project: free5gc
   name: free5gc-free5gc-amf-service
+  namespace: 5gcore # kpt-set: ${namespace}
 spec:
   externalTrafficPolicy: Cluster
   ports:
