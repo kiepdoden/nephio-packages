@@ -5,14 +5,24 @@ checkpoint/restore + cross-cluster/cross-cloud migrate qua Karmada), export
 từ cluster thật đang chạy trên server `5g-control-plane`. Cấu trúc dựa theo
 mẫu [`bactp/workload-catalog`](https://github.com/bactp/workload-catalog).
 
-## Package
+## Package (quản lý qua Nephio)
 
 | Package | Nội dung |
 |---|---|
 | [`free5gc-5gcore-others`](free5gc-5gcore-others/) | free5GC NF trừ AMF/SMF/UPF: NRF, UDR, UDM, AUSF, PCF, NSSF, CHF, NEF, DBPython, MongoDB, WebUI |
-| [`free5gc-amf-smf-upf`](free5gc-amf-smf-upf/) | AMF, SMF, UPF (custom NextMN) + NAD/ConfigMap của UPF |
+| [`free5gc-amf-smf-upf`](free5gc-amf-smf-upf/) | Chỉ còn **AMF** (SMF/UPF đã tách ra, xem bên dưới) — tên giữ nguyên để tránh phải xoá/tạo lại deployment |
 | [`5g-controllers`](5g-controllers/) | `agent` (checkpoint/restore DaemonSet), `migrate-controller` (Checkpoint/Restore CRD), `enipool-manager` + CR `CloudNICPool` |
 | [`upf-migrate-manager`](upf-migrate-manager/) | Controller chính `upf-migrate-controller-manager` (Migrate/Registration/NextmnUPFMap, gRPC `:7000`) |
+
+## `manual-smf-upf/` — SMF + UPF, KHÔNG qua Nephio
+
+SMF và UPF (custom NextMN) đang trong giai đoạn thay đổi/thử nghiệm nhiều —
+đưa qua vòng GitOps đầy đủ (blueprint → Porch upgrade → publish → chờ
+ArgoCD sync) tạo quá nhiều ma sát khi cần lặp nhanh. Tách hẳn ra
+[`manual-smf-upf/`](manual-smf-upf/) — không có `Kptfile`, không setter,
+Porch **không** phát hiện thư mục này (không có git tag `manual-smf-upf/vX`
+nên không lọt vào danh sách External Blueprint). Deploy/sửa bằng
+`kubectl apply` trực tiếp, xem README trong đó.
 
 ## Karmada — cố tình KHÔNG đóng gói
 
@@ -27,9 +37,10 @@ cần Karmada, không quản lý qua package Nephio.
 
 1. **Cilium (CNI) + Multus** — cài trước, ngoài phạm vi package này (Helm/addon riêng), mọi NAD/LoadBalancer trong các package dưới đây phụ thuộc 2 cái này.
 2. `free5gc-5gcore-others` (namespace → PVC dynamic-provision → NRF/MongoDB/...)
-3. `free5gc-amf-smf-upf` (phụ thuộc NRF ở bước 2)
-4. `5g-controllers` + `upf-migrate-manager` (độc lập, deploy trước/sau/song song đều được)
-5. Nếu cần cross-cluster/cross-cloud migrate: tự `karmadactl init` (xem ghi chú Karmada ở trên) trước khi `upf-migrate-manager` dùng được tính năng multi-cluster — xem README package đó về `karmada-kubeconfig-configmap`.
+3. `free5gc-amf-smf-upf` (AMF, phụ thuộc NRF ở bước 2)
+4. `manual-smf-upf/` (`kubectl apply` tay — SMF phụ thuộc NRF ở bước 2, UPF phụ thuộc `upf-migrate-manager` ở bước 5)
+5. `5g-controllers` + `upf-migrate-manager` (độc lập với free5gc, deploy trước/sau/song song đều được)
+6. Nếu cần cross-cluster/cross-cloud migrate: tự `karmadactl init` (xem ghi chú Karmada ở trên) trước khi `upf-migrate-manager` dùng được tính năng multi-cluster — xem README package đó về `karmada-kubeconfig-configmap`.
 
 Mỗi package tự chứa `Kptfile` + `setters.yaml` + `README.md` riêng, xem chi tiết trong từng thư mục.
 

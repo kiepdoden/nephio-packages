@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: upf-test-pod
-  namespace: default # kpt-set: ${upf-namespace}
+  namespace: default
   annotations:
     k8s.v1.cni.cncf.io/networks: >
       [
@@ -34,10 +34,10 @@ spec:
               - key: kubernetes.io/hostname
                 operator: NotIn
                 values:
-                  - ip-192-168-10-12 # kpt-set: ${smf-node}
+                  - ip-192-168-10-12
   containers:
     - name: upf-test-container
-      image: docker.io/kiemtcb/upf-test:nextmn-test-not-debug  # kpt-set: ${image-upf}
+      image: docker.io/kiemtcb/upf-test:nextmn-test-not-debug
       imagePullPolicy: Always
       volumeMounts:
         - name: session-manager-config

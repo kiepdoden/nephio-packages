@@ -11,7 +11,7 @@ metadata:
     app: free5gc
     app.kubernetes.io/managed-by: Helm
   name: free5gc-free5gc-smf-configmap
-  namespace: 5gcore  # kpt-set: ${namespace}
+  namespace: 5gcore
 ---
 apiVersion: v1
 kind: Service
@@ -25,7 +25,7 @@ metadata:
     nf: smf
     project: free5gc
   name: free5gc-free5gc-smf-service
-  namespace: 5gcore  # kpt-set: ${namespace}
+  namespace: 5gcore
 spec:
   ports:
     - name: http
@@ -51,7 +51,7 @@ metadata:
     nf: smf
     project: free5gc
   name: free5gc-free5gc-smf-smf
-  namespace: 5gcore  # kpt-set: ${namespace}
+  namespace: 5gcore
 spec:
   replicas: 1
   selector:
@@ -79,7 +79,7 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - ip-192-168-10-12 # kpt-set: ${smf-node}
+                      - ip-192-168-10-12
       containers:
         - args:
             - -c
@@ -91,7 +91,7 @@ spec:
           env:
             - name: GIN_MODE
               value: release
-          image: kiemtcb/smf:v4.0.0-sdn  # kpt-set: ${image-smf}
+          image: kiemtcb/smf:v4.0.0-sdn
           imagePullPolicy: Always
           name: smf
           ports:
@@ -125,7 +125,7 @@ spec:
           image: curlimages/curl:8.7.1
           name: wait-nrf
       nodeSelector:
-        kubernetes.io/hostname: ip-192-168-10-12 # kpt-set: ${smf-node}
+        kubernetes.io/hostname: ip-192-168-10-12
       restartPolicy: Always
       securityContext: {}
       tolerations: []
@@ -155,7 +155,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: Helm
   name: n4network-free5gc-free5gc-smf
-  namespace: 5gcore  # kpt-set: ${namespace}
+  namespace: 5gcore
 spec:
   config: |-
     {

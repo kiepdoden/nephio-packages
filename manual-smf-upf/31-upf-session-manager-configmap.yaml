@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: session-manager-configmap
-  namespace: default # kpt-set: ${upf-namespace}
+  namespace: default
 data:
   config.yaml: |
     controllerK8s:
