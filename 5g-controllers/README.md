@@ -18,11 +18,16 @@ Package cũng bundle:
   `upf-migrate-manager`, xem ghi chú bên dưới).
 - 2 CRD của group `migrate.ahihi.ahuhu/v1` (`Checkpoint`, `Restore`, đã
   nhúng sẵn trong `20-migrate-controller.yaml`).
-- **`03-cloudnicpools.yaml`** — 6 `CloudNICPool` CR đang chạy thật trên cluster
-  (`cluster1-n3/n4/n6` cho AWS, `azure-n3/n4/n6` cho Azure), export từ
-  `kubectl get cloudnicpools -o yaml` (đã bỏ `status`/runtime metadata —
-  `status.available` là danh sách NIC warm-pool, `enipool-manager` tự refill
-  lại khi các CR này được apply).
+
+> **Đổi quan trọng:** package này **không còn bundle CR `CloudNICPool` cụ
+> thể nào nữa** (trước đây có 6 CR mẫu ở `03-cloudnicpools.yaml`, đã bỏ).
+> Lý do: mỗi `CloudNICPool` gắn chết với subnet ID/Security Group ID (AWS)
+> hoặc subscription/resource-group (Azure) của **1 VPC/tenant cụ thể** —
+> đây là data theo môi trường, không phải phần mềm, deploy sang VPC khác là
+> sai ngay (subnet/SG không tồn tại). Xem
+> [`../manual-cloudnicpools/`](../manual-cloudnicpools/) — CR mẫu để tham
+> khảo, tự điền đúng ID hạ tầng thật của cluster đích rồi `kubectl apply`
+> tay, không qua Nephio.
 
 ## Deploy
 
@@ -36,8 +41,8 @@ kpt live apply .
 
 Không phụ thuộc 2 package free5gc — có thể deploy độc lập trước/sau/song song.
 Nên deploy **cùng lúc hoặc trước** package `upf-migrate-manager`, vì
-`upf-migrate-controller-manager` tạo `CloudNICClaim` tham chiếu tới các
-`CloudNICPool` ở đây.
+`upf-migrate-controller-manager` tạo `CloudNICClaim` tham chiếu tới
+`CloudNICPool` (giờ tạo tay qua `manual-cloudnicpools/`, xem trên).
 
 ## Ghi chú quan trọng
 
@@ -51,5 +56,9 @@ Nên deploy **cùng lúc hoặc trước** package `upf-migrate-manager`, vì
 - Image `enipool-manager` đã được cập nhật sang tag đang chạy thật trên
   cluster (`hybrid-host-device-v1`) thay vì tag trong
   `config/enipool-manager/deployment.yaml` gốc (`dynamic-nad-v1`, đã cũ).
+  `AWS_REGION`/`AZURE_SUBSCRIPTION_ID`/`AZURE_RESOURCE_GROUP`/`AZURE_LOCATION`
+  trong `setters.yaml` là credential/context cho chính `enipool-manager`
+  chạy — **khác** với data của từng `CloudNICPool` (đã tách ra ngoài), nên
+  vẫn giữ lại đây vì đúng chuẩn setter (deployer override trước khi publish).
 - `agent` cần chạy trên **mọi node** có khả năng host UPF (DaemonSet,
   `privileged: true`), vì nó thao tác trực tiếp `/var/lib/kubelet/checkpoints/`.

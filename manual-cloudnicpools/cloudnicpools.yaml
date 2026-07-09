@@ -15,7 +15,7 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: us-east-2 # kpt-set: ${aws-region}
+  region: us-east-2
   securityGroups:
     - sg-0774cb54f05a1f854
   size: 3
@@ -34,7 +34,7 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: us-east-2 # kpt-set: ${aws-region}
+  region: us-east-2
   securityGroups:
     - sg-0774cb54f05a1f854
   size: 3
@@ -53,7 +53,7 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: us-east-2 # kpt-set: ${aws-region}
+  region: us-east-2
   securityGroups:
     - sg-0774cb54f05a1f854
   size: 3
@@ -74,11 +74,11 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: eastus2 # kpt-set: ${azure-location}
-  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  region: eastus2
+  resourceGroup: rg-upf-migrate-azure
   size: 3
   subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n3-41
-  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490
   zone: eastus-2
 ---
 apiVersion: upf.ahihi.ahuhu/v1
@@ -94,11 +94,11 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: eastus2 # kpt-set: ${azure-location}
-  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  region: eastus2
+  resourceGroup: rg-upf-migrate-azure
   size: 3
   subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n4-51
-  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490
   zone: eastus-2
 ---
 apiVersion: upf.ahihi.ahuhu/v1
@@ -114,9 +114,9 @@ spec:
     matchLabels:
       node-role.upf/candidate: "true"
   refillPolicy: Always
-  region: eastus2 # kpt-set: ${azure-location}
-  resourceGroup: rg-upf-migrate-azure # kpt-set: ${azure-resource-group}
+  region: eastus2
+  resourceGroup: rg-upf-migrate-azure
   size: 3
   subnet: /subscriptions/91414a5d-9d4e-4b1a-8de6-d0a95a6d0490/resourceGroups/rg-upf-migrate-azure/providers/Microsoft.Network/virtualNetworks/vnet-upf-azure/subnets/snet-upf-n6-61
-  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490 # kpt-set: ${azure-subscription-id}
+  subscriptionID: 91414a5d-9d4e-4b1a-8de6-d0a95a6d0490
   zone: eastus-2

@@ -11,7 +11,7 @@ mẫu [`bactp/workload-catalog`](https://github.com/bactp/workload-catalog).
 |---|---|
 | [`free5gc-5gcore-others`](free5gc-5gcore-others/) | free5GC NF trừ AMF/SMF/UPF: NRF, UDR, UDM, AUSF, PCF, NSSF, CHF, NEF, DBPython, MongoDB, WebUI |
 | [`free5gc-amf-smf-upf`](free5gc-amf-smf-upf/) | AMF (đầy đủ) + ConfigMap/Service/NAD của SMF và UPF (Deployment SMF và Pod UPF tách ra, xem bên dưới) |
-| [`5g-controllers`](5g-controllers/) | `agent` (checkpoint/restore DaemonSet), `migrate-controller` (Checkpoint/Restore CRD), `enipool-manager` + CR `CloudNICPool` |
+| [`5g-controllers`](5g-controllers/) | `agent` (checkpoint/restore DaemonSet), `migrate-controller` (Checkpoint/Restore CRD), `enipool-manager` + CRD `CloudNICPool`/`CloudNICClaim` (CR mẫu tách ra ngoài, xem bên dưới) |
 | [`upf-migrate-manager`](upf-migrate-manager/) | Controller chính `upf-migrate-controller-manager` (Migrate/Registration/NextmnUPFMap, gRPC `:7000`) |
 
 ## `manual-smf-upf/` — Deployment SMF + Pod UPF, KHÔNG qua Nephio
@@ -23,6 +23,15 @@ Porch **không** phát hiện thư mục này (không có git tag `manual-smf-up
 nên không lọt vào danh sách External Blueprint). ConfigMap/Service/NAD hỗ
 trợ của SMF/UPF **vẫn nằm trong** `free5gc-amf-smf-upf` (ổn định, ít đổi).
 Deploy/sửa Deployment/Pod bằng `kubectl apply` trực tiếp, xem README trong đó.
+
+## `manual-cloudnicpools/` — CloudNICPool CR mẫu, KHÔNG qua Nephio
+
+6 CR `CloudNICPool` (3 AWS + 3 Azure) tách khỏi package `5g-controllers` —
+mỗi CR gắn chết với subnet ID/Security Group ID (AWS) hoặc
+subscription/resource-group (Azure) của **1 VPC/tenant cụ thể**, deploy
+sang VPC/tenant khác là sai ngay lập tức (ID không tồn tại). Xem
+[`manual-cloudnicpools/`](manual-cloudnicpools/) — CR mẫu tham khảo, tự
+điền đúng hạ tầng thật rồi `kubectl apply` tay.
 
 ## Karmada — cố tình KHÔNG đóng gói
 
@@ -40,7 +49,8 @@ cần Karmada, không quản lý qua package Nephio.
 3. `free5gc-amf-smf-upf` (AMF, phụ thuộc NRF ở bước 2)
 4. `manual-smf-upf/` (`kubectl apply` tay — cần package `free5gc-amf-smf-upf` ở bước 3 apply xong trước, vì Deployment SMF/Pod UPF mount ConfigMap/NAD từ đó)
 5. `5g-controllers` + `upf-migrate-manager` (độc lập với free5gc, deploy trước/sau/song song đều được)
-6. Nếu cần cross-cluster/cross-cloud migrate: tự `karmadactl init` (xem ghi chú Karmada ở trên) trước khi `upf-migrate-manager` dùng được tính năng multi-cluster — xem README package đó về `karmada-kubeconfig-configmap`.
+6. `manual-cloudnicpools/` (`kubectl apply` tay, chỉ cần nếu dùng cross-cluster/cross-cloud migrate — điền đúng subnet/SG/subscription thật trước) — cần package `5g-controllers` deploy xong trước (CRD `CloudNICPool`)
+7. Nếu cần cross-cluster/cross-cloud migrate: tự `karmadactl init` (xem ghi chú Karmada ở trên) trước khi `upf-migrate-manager` dùng được tính năng multi-cluster — xem README package đó về `karmada-kubeconfig-configmap`.
 
 Mỗi package tự chứa `Kptfile` + `setters.yaml` + `README.md` riêng, xem chi tiết trong từng thư mục.
 
