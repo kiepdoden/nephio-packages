@@ -1,0 +1,60 @@
+# CloudNICPool AWS — dùng khi Migrate.spec.cluster.location.multiCluster.cluster.name: cluster1
+# CR mẫu tham khảo (kubectl get cloudnicpools -o yaml, đã bỏ status/resourceVersion/uid).
+# Điền đúng subnet/securityGroups của VPC thật nơi cluster đích chạy trước khi apply.
+
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n3
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n3
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-003529ac1f69c118f
+  zone: us-east-2b
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n4
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n4
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-04c33a4a7b3725e23
+  zone: us-east-2b
+---
+apiVersion: upf.ahihi.ahuhu/v1
+kind: CloudNICPool
+metadata:
+  name: cluster1-n6
+spec:
+  cloud: aws
+  disableSourceDestCheck: true
+  networkFunction: n6
+  nodeSelector:
+    matchLabels:
+      node-role.upf/candidate: "true"
+  refillPolicy: Always
+  region: us-east-2
+  securityGroups:
+    - sg-0774cb54f05a1f854
+  size: 3
+  subnet: subnet-0e1023d2e64cee5dc
+  zone: us-east-2b

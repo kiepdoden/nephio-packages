@@ -32,10 +32,10 @@ trước khi publish), 6 CR này *là* toàn bộ định nghĩa NIC pool, khôn
    nơi cluster đích đang chạy.
 3. Đổi `metadata.name` theo đúng convention `<targetCluster>-<iface>` (vd.
    `core-n3`, `core-n4`, `core-n6` nếu cluster đích tên `core` trong Karmada).
-4. `kubectl apply -f cloudnicpools.yaml` sau khi package `5g-controllers`
+4. `kubectl apply -f aws-cloudnicpools.yaml` (AWS) hoặc `kubectl apply -f azure-cloudnicpools.yaml` (Azure) sau khi package `5g-controllers`
    (chứa `enipool-manager` + CRD `CloudNICPool`) đã deploy xong.
 
-## Nội dung file gốc (tham khảo, KHÔNG apply thẳng)
+## Nội dung (tham khảo, KHÔNG apply thẳng — điền đúng ID hạ tầng thật trước)
 
 - `cluster1-n3/n4/n6` — mẫu AWS, pool cho member cluster Karmada tên `cluster1`
 - `azure-n3/n4/n6` — mẫu Azure, pool cho member cluster Karmada tên `azure`
