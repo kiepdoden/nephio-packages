@@ -203,7 +203,7 @@ spec:
           - --leader-elect
           - --health-probe-bind-address=:8081
           - --enable-multi-cluster=true
-        image: kiepdoden123/upf-manager:hybrid-host-device-v2 # kpt-set: ${image-manager}
+        image: kiepdoden123/upf-manager:hybrid-host-device-v3 # kpt-set: ${image-manager}
         env:
         - name: AWS_REGION
           value: "us-east-2" # kpt-set: ${aws-region}
