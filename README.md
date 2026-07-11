@@ -121,6 +121,19 @@ the YAML shapes to another cluster is meaningless without those secrets and
 is not portable. Decision: run `karmadactl init` directly on any cluster
 that needs Karmada; do not manage it as a Nephio package.
 
+## Prerequisites
+
+The target clusters themselves (`core` and the `edge*` workload clusters)
+are **provisioned from the Nephio management cluster** (Cluster API + Porch
+PackageVariants + per-cluster ArgoCD bootstrap) before anything in this repo
+is deployed. Follow the bootstrap guide here:
+
+- [nephio-test-infra-aws — bootstrap_5g_guide.md](https://github.com/vitu-mafeni/nephio-test-infra-aws/blob/company-version/bootstrap_5g_guide.md)
+
+Once the workload clusters are up and registered (deployment repos created,
+ArgoCD syncing), register this repository as an External Blueprints repo in
+Nephio and proceed with the order below.
+
 ## Recommended deployment order
 
 1. **CNI (Cilium/Flannel) + Multus** — install first, outside this repo
