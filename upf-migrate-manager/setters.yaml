@@ -6,7 +6,7 @@ metadata:
     config.kubernetes.io/local-config: "true"
 data:
   namespace: upf-migrate-system
-  image-manager: kiepdoden123/upf-manager:hybrid-host-device-v2
+  image-manager: kiepdoden123/upf-manager:hybrid-host-device-v3
   aws-region: us-east-2
   nrf-address: "192.168.10.10:30348"
   5gcore-namespace: "5gcore"
