@@ -1,0 +1,51 @@
+Nephio-based Deployment Package for 5G UPF Live Migration (nephio-packages)
+Copyright 2026 Distributed Cloud and Network Lab, Soongsil University
+
+Licensed under the Apache License, Version 2.0 (see the LICENSE file).
+
+This repository contains Kubernetes manifests, kpt package metadata
+(Kptfile, setters.yaml), documentation and helper scripts. It does not
+contain container images or binaries; the images listed below are pulled
+from their registries at deployment time and keep their own licenses.
+
+-----------------------------------------------------------------------
+Third-party material included in this repository
+-----------------------------------------------------------------------
+
+1. towards5gs-helm (free5GC Helm charts)
+   https://github.com/Orange-OpenSource/towards5gs-helm
+   License: Apache License 2.0
+   The free5GC network-function manifests in free5gc-5gcore-others/ and
+   free5gc-amf-smf-upf/ were rendered from these Helm charts and then
+   modified (namespaces, storage, setters, node placement).
+
+2. free5GC
+   https://github.com/free5gc/free5gc
+   License: Apache License 2.0
+   The ConfigMaps of the free5GC network functions contain free5GC
+   configuration files (amfcfg.yaml, smfcfg.yaml, nrfcfg.yaml, ...).
+
+3. Bitnami MongoDB Helm chart (chart mongodb-15.6.0)
+   https://github.com/bitnami/charts
+   License: Apache License 2.0
+   free5gc-5gcore-others/resources/10-mongodb.yaml was rendered from it.
+
+-----------------------------------------------------------------------
+Third-party container images referenced (not redistributed)
+-----------------------------------------------------------------------
+
+- free5gc/{amf,nrf,udr,udm,ausf,pcf,nssf,chf,nef,webui}:v4.0.x
+    free5GC, Apache License 2.0
+- towards5gs/free5gc-dbpython:latest
+    towards5gs-helm project
+- docker.io/bitnami/mongodb:latest
+    MongoDB Community Server (Server Side Public License v1), packaged by Bitnami
+- docker.io/kiemtcb/smf:v4.0.0-sdn
+    free5GC SMF with a lab patch for SDN path update; free5GC is Apache License 2.0
+- docker.io/kiemtcb/upf-test:nextmn-test-not-debug
+    Custom build of NextMN UPF (https://github.com/nextmn/upf),
+    MIT License, Copyright Louis Royer and the NextMN Contributors
+- busybox:1.32.0 (GPL-2.0), curlimages/curl:8.7.1 (curl license)
+    Used only as init containers
+- ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2
+    kpt functions catalog, Apache License 2.0 (used by kpt fn render)
